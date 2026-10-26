@@ -64,6 +64,61 @@ jobs:
           Copy-Item "$sys32\vcruntime140_1.dll" $dest -Force
           Copy-Item "$sys32\msvcp140.dll" $dest -Force
 
+      - name: Smoke test — launch on real Windows, verify alive + window visible
+        shell: pwsh
+        run: |
+          $dest = "build\windows\x64\runner\Release"
+          $exe = Get-ChildItem "$dest\*.exe" | Select-Object -First 1
+          Write-Host "Launching $($exe.FullName)"
+          $p = Start-Process $exe.FullName -PassThru
+          Start-Sleep -Seconds 12
+          $crashed = $p.HasExited
+          if ($crashed) {
+            Write-Host "::error::App exited on startup (exit code $($p.ExitCode))"
+          } else {
+            Write-Host "App alive after 12s (PID $($p.Id))"
+            Stop-Process $p -Force
+          }
+          # App-level crash log (Dart-side failures write checkpoints here).
+          $log = Get-ChildItem $env:APPDATA -Recurse -Depth 8 -Filter "tabaro3_crash.log" `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($log) {
+            Write-Host "--- tabaro3_crash.log ---"
+            Get-Content $log.FullName
+            Copy-Item $log.FullName .\crash_log.txt -Force
+          }
+          # OS-level crash events catch DLL load failures that kill the process
+          # before Dart code (and the crash log) can run.
+          Get-WinEvent -FilterHashtable @{
+            LogName='Application'; ProviderName='Application Error';
+            StartTime=(Get-Date).AddMinutes(-2)
+          } -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "EVENT LOG: $($_.Message)"
+          }
+          # Screen capture proves the window is actually visible, not just
+          # that the process stayed alive. Non-fatal if it fails.
+          try {
+            Add-Type -AssemblyName System.Windows.Forms
+            Add-Type -AssemblyName System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("$PWD\window_screenshot.png")
+            Write-Host "Screenshot saved"
+          } catch { Write-Host "Screenshot capture failed (non-fatal): $_" }
+          if ($crashed) { exit 1 }
+
+      - name: Upload smoke-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-smoke-evidence
+          path: |
+            window_screenshot.png
+            crash_log.txt
+          if-no-files-found: ignore
+
       - name: Compile Inno Setup (.exe) Installer
         run: |
           iscc `

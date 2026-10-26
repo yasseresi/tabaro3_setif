@@ -1,6 +1,5 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../../../data/app_database.dart';
 import '../domain/eligibility.dart';
@@ -86,7 +85,7 @@ class PdfCardService {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
+    await PdfCommon.printPdf(pdf, name: 'donor_card');
   }
 
   static pw.Widget _detailsTable(

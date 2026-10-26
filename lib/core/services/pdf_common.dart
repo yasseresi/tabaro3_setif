@@ -1,12 +1,33 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 /// Shared PDF helpers: Cairo font loading + CWTS institutional header.
 class PdfCommon {
   PdfCommon._();
+
+  /// Sends finished PDF bytes to the OS print flow.
+  /// Windows: native print dialog via `printing` (the clinic's platform).
+  /// macOS: open in Preview — its print dialog is the native macOS way
+  /// (`Printing.layoutPdf`'s WKWebView dialog is unreliable there).
+  static Future<void> printPdf(pw.Document pdf, {String name = 'tabaro3'}) async {
+    final bytes = await pdf.save();
+    if (Platform.isMacOS) {
+      final file = File(
+        p.join(Directory.systemTemp.path,
+            '${name}_${DateTime.now().millisecondsSinceEpoch}.pdf'),
+      );
+      await file.writeAsBytes(bytes);
+      await Process.run('open', [file.path]);
+    } else {
+      await Printing.layoutPdf(onLayout: (_) => bytes);
+    }
+  }
 
   static Future<(pw.Font, pw.Font)> loadFonts() async {
     final regular = pw.Font.ttf(

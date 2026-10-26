@@ -1,6 +1,5 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../../../data/app_database.dart';
 import '../domain/eligibility.dart';
@@ -34,7 +33,7 @@ class CswFicheService {
       theme: pw.ThemeData.withFont(base: base, bold: bold),
     );
     pdf.addPage(_page(pdf, d, events, blank, base, bold));
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
+    await PdfCommon.printPdf(pdf, name: 'csw_fiche');
   }
 
   /// Multi-donor print job: one fiche page per donor.
@@ -50,7 +49,7 @@ class CswFicheService {
       final events = await eventsOf(d.id);
       pdf.addPage(_page(pdf, d, events, false, base, bold));
     }
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
+    await PdfCommon.printPdf(pdf, name: 'csw_fiches');
   }
 
   static pw.Page _page(

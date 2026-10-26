@@ -77,8 +77,19 @@ jobs:
             Write-Host "::error::App exited on startup (exit code $($p.ExitCode))"
           } else {
             Write-Host "App alive after 12s (PID $($p.Id))"
-            Stop-Process $p -Force
           }
+          # Screenshot BEFORE killing the app, so the artifact shows the window.
+          try {
+            Add-Type -AssemblyName System.Windows.Forms
+            Add-Type -AssemblyName System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("$PWD\window_screenshot.png")
+            Write-Host "Screenshot saved"
+          } catch { Write-Host "Screenshot capture failed (non-fatal): $_" }
+          if (-not $crashed) { Stop-Process $p -Force }
           # App-level crash log (Dart-side failures write checkpoints here).
           $log = Get-ChildItem $env:APPDATA -Recurse -Depth 8 -Filter "tabaro3_crash.log" `
             -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -95,20 +106,7 @@ jobs:
           } -ErrorAction SilentlyContinue | ForEach-Object {
             Write-Host "EVENT LOG: $($_.Message)"
           }
-          # Screen capture proves the window is actually visible, not just
-          # that the process stayed alive. Non-fatal if it fails.
-          try {
-            Add-Type -AssemblyName System.Windows.Forms
-            Add-Type -AssemblyName System.Drawing
-            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
-            $g = [System.Drawing.Graphics]::FromImage($bmp)
-            $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-            $bmp.Save("$PWD\window_screenshot.png")
-            Write-Host "Screenshot saved"
-          } catch { Write-Host "Screenshot capture failed (non-fatal): $_" }
           if ($crashed) { exit 1 }
-
       - name: Upload smoke-test evidence
         if: always()
         uses: actions/upload-artifact@v4

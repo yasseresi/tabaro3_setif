@@ -47,7 +47,7 @@ class BackupService {
     );
     await tmp.delete();
     await _addPhotos(archive, 'photos/');
-    return ZipEncoder().encode(archive)!;
+    return ZipEncoder().encode(archive);
   }
 
   /// Silent auto snapshot in backups/ + prune to last 10. Returns the path.

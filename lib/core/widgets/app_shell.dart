@@ -11,6 +11,7 @@ import '../app_state.dart';
 import '../resources/app_colors.dart';
 import '../resources/app_strings.dart';
 import 'brand_emblems.dart';
+
 /// Sidebar + institutional header + routed feature screens.
 class AppShell extends StatefulWidget {
   final AppState state;
@@ -77,6 +78,7 @@ class _AppShellState extends State<AppShell> {
       ('settings', LucideIcons.settings, t('settings')),
     ];
     return Container(
+      key: const Key('app-sidebar'),
       width: 240,
       decoration: const BoxDecoration(gradient: AppColors.sidebarGradient),
       child: Column(
@@ -116,6 +118,7 @@ class _AppShellState extends State<AppShell> {
                   children: [
                     for (final (id, icon, label) in items)
                       _NavItem(
+                        key: Key('nav-$id'),
                         icon: icon,
                         label: label,
                         active: _screen == id,
@@ -255,6 +258,7 @@ class _NavItem extends StatelessWidget {
   final int? badge;
   final VoidCallback onTap;
   const _NavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,

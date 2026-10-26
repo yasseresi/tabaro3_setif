@@ -30,7 +30,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   String get lang => widget.state.lang;
   String t(String key) => tr(lang, key);
 
-  BackupService get _backup => BackupService(db: widget.state.db, paths: widget.state.paths);
+  BackupService get _backup =>
+      BackupService(db: widget.state.db, paths: widget.state.paths);
 
   @override
   Widget build(BuildContext context) {
@@ -75,29 +76,36 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Icon(LucideIcons.fileSpreadsheet,
-                  size: 44, color: AppColors.primary),
+              child: const Icon(
+                LucideIcons.fileSpreadsheet,
+                size: 44,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
-              child: Text(t('importHelp'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary)),
+              child: Text(
+                t('importHelp'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11.5,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(LucideIcons.upload, size: 16),
                   label: Text(t('importX')),
                   onPressed: _busy ? null : _import,
                 ),
-                const SizedBox(width: 10),
                 OutlinedButton.icon(
                   icon: const Icon(LucideIcons.download, size: 16),
                   label: Text(t('template')),
@@ -118,26 +126,35 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('$count',
-                style: const TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary)),
-            Text(t('total'),
-                style: const TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 13,
-                    color: AppColors.textSecondary)),
+            Text(
+              '$count',
+              style: const TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 44,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              t('total'),
+              style: const TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
-              child: Text(t('exportHelp'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary)),
+              child: Text(
+                t('exportHelp'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11.5,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             const SizedBox(height: 14),
             ElevatedButton.icon(
@@ -192,25 +209,32 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   Widget _backupPanel() {
     return AppPanel(
       title: t('backupTitle'),
+      fill: false,
       padding: const EdgeInsetsDirectional.all(14),
       child: Column(
         children: [
-          Text(t('backupHelp'),
-              style: const TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 11.5,
-                  color: AppColors.textSecondary)),
+          Text(
+            t('backupHelp'),
+            style: const TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 11.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
             children: [
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primaryDark),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryDark,
+                ),
                 icon: const Icon(LucideIcons.save, size: 16),
                 label: Text(t('exportBackup')),
                 onPressed: _busy ? null : _exportBackup,
               ),
-              const SizedBox(width: 10),
               OutlinedButton.icon(
                 icon: const Icon(LucideIcons.rotateCcw, size: 16),
                 label: Text(t('restoreBackup')),
@@ -237,9 +261,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       if (rows.isEmpty) return;
       // Safety snapshot before bulk import.
       await _backup.autoBackup();
-      final (added, updated, skipped) =
-          await widget.state.db.smartMergeDonors(rows);
-      _snack('${t('imported')} $added ${t('added')}, $updated ${t('updated')}, $skipped ${t('skipped')}');
+      final (added, updated, skipped) = await widget.state.db.smartMergeDonors(
+        rows,
+      );
+      _snack(
+        '${t('imported')} $added ${t('added')}, $updated ${t('updated')}, $skipped ${t('skipped')}',
+      );
     } on FileSystemException {
       _snack(t('closeExcel'));
     } catch (e) {
@@ -254,8 +281,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       final excel = ExcelService((_) async => []);
       final bytes = await excel.exportTemplate();
       final saved = await FilePicker.saveFile(
-          fileName: 'modele_donneurs.xlsx',
-          bytes: Uint8List.fromList(bytes));
+        fileName: 'modele_donneurs.xlsx',
+        bytes: Uint8List.fromList(bytes),
+      );
       if (saved == null) return;
       _snack('${t('exported')}: $saved');
     } on FileSystemException {
@@ -272,9 +300,10 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       final bytes = await excel.exportWorkbook(donors);
       final now = DateTime.now();
       final saved = await FilePicker.saveFile(
-          fileName:
-              'donneurs_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.xlsx',
-          bytes: Uint8List.fromList(bytes));
+        fileName:
+            'donneurs_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.xlsx',
+        bytes: Uint8List.fromList(bytes),
+      );
       if (saved == null) return;
       _snack('${t('exported')}: $saved');
     } on FileSystemException {
@@ -318,8 +347,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         title: Text(t('restoreBackup')),
         content: Text(t('restoreConfirm')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('confirm'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('confirm')),
+          ),
         ],
       ),
     );
@@ -366,11 +401,17 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('cancel')),
+          ),
           FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(t('confirm'))),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('confirm')),
+          ),
         ],
       ),
     );

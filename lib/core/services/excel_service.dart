@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:csv/csv.dart';
-import 'package:excel/excel.dart' as xl;
+import 'package:excel_plus/excel_plus.dart' as xl;
 import 'package:file_picker/file_picker.dart';
 
 import '../../data/app_database.dart';

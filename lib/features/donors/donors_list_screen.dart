@@ -124,6 +124,8 @@ class _DonorsListScreenState extends State<DonorsListScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: DropdownButtonFormField<String>(
+            isExpanded: true,
+            isDense: true,
             initialValue: _group,
             hint: LtrText(t('all')),
             items: [
@@ -142,6 +144,8 @@ class _DonorsListScreenState extends State<DonorsListScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: DropdownButtonFormField<String>(
+            isExpanded: true,
+            isDense: true,
             initialValue: _status,
             hint: Text(t('all')),
             items: [
@@ -236,24 +240,36 @@ class _DonorsListScreenState extends State<DonorsListScreen> {
       );
     }).toList();
 
+    // Responsive table: fills the available width, gains a horizontal
+    // scrollbar only when the window is narrower than the 8 columns need.
     return Expanded(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: DataTable(
-          headingRowColor: WidgetStatePropertyAll(AppColors.muted),
-          columnSpacing: 18,
-          columns: [
-            DataColumn(label: Text(t('name'))),
-            DataColumn(label: Text(t('gender'))),
-            DataColumn(label: Text(t('bloodGroup'))),
-            DataColumn(label: Text(t('phone'))),
-            DataColumn(label: Text(t('lastDonation'))),
-            DataColumn(label: Text(t('nextEligible'))),
-            DataColumn(label: Text(t('status'))),
-            DataColumn(label: Text(t('actions'))),
-          ],
-          rows: rows,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: DataTable(
+                  headingRowColor: WidgetStatePropertyAll(AppColors.muted),
+                  columnSpacing: 12,
+                  columns: [
+                    DataColumn(label: Text(t('name'))),
+                    DataColumn(label: Text(t('gender'))),
+                    DataColumn(label: Text(t('bloodGroup'))),
+                    DataColumn(label: Text(t('phone'))),
+                    DataColumn(label: Text(t('lastDonation'))),
+                    DataColumn(label: Text(t('nextEligible'))),
+                    DataColumn(label: Text(t('status'))),
+                    DataColumn(label: Text(t('actions'))),
+                  ],
+                  rows: rows,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

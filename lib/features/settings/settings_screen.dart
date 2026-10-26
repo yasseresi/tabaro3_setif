@@ -52,6 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListView(
         children: [
           AppPanel(
+            fill: false,
             title: t('account'),
             child: Padding(
               padding: const EdgeInsetsDirectional.all(8),
@@ -82,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           AppPanel(
+            fill: false,
             title: t('language'),
             child: Padding(
               padding: const EdgeInsetsDirectional.all(8),
@@ -114,6 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           AppPanel(
+            fill: false,
             title: t('resetData'),
             child: Padding(
               padding: const EdgeInsetsDirectional.all(8),
@@ -140,6 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           AppPanel(
+            fill: false,
             title: t('versionLabel'),
             child: Padding(
               padding: const EdgeInsetsDirectional.all(8),
@@ -261,9 +265,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!mounted) return;
     if (!passOk) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t('wrongPassword'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t('wrongPassword'))));
       return;
     }
     // Gate 2: automatic pre-wipe .zip backup.

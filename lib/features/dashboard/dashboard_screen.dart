@@ -49,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final maxCount = byGroup.values.fold(1, (a, b) => a > b ? a : b);
         final recent = donors.take(5).toList();
 
-        return SingleChildScrollView(
+        return Padding(
           padding: const EdgeInsetsDirectional.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,21 +119,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: AppPanel(
-                      title: t('byGroup'),
-                      child: _GroupChart(byGroup: byGroup, maxCount: maxCount),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: AppPanel(
+                        title: t('byGroup'),
+                        child: _GroupChart(
+                          byGroup: byGroup,
+                          maxCount: maxCount,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    flex: 2,
-                    child: SizedBox(
-                      height: 320,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      flex: 2,
                       child: AppPanel(
                         title: t('recent'),
                         trailing: TextButton(
@@ -179,8 +181,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -188,7 +190,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-
 }
 
 class _KpiCard extends StatelessWidget {

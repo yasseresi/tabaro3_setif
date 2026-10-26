@@ -3,16 +3,22 @@ import 'package:flutter/material.dart';
 import '../resources/app_colors.dart';
 
 /// White rounded card with a navy header bar + optional trailing action.
+///
+/// [fill]=true (default): the body expands to the panel's bounded height —
+/// for full-screen panels (lists, tables). Use [fill]=false when the panel
+/// is a non-flex child of a Column (shrink-wraps to its content height).
 class AppPanel extends StatelessWidget {
   final String title;
   final Widget child;
   final Widget? trailing;
+  final bool fill;
   final EdgeInsetsDirectional padding;
   const AppPanel({
     super.key,
     required this.title,
     required this.child,
     this.trailing,
+    this.fill = true,
     this.padding = const EdgeInsetsDirectional.all(16),
   });
 
@@ -25,39 +31,46 @@ class AppPanel extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
+        mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsetsDirectional.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadiusDirectional.vertical(
-                top: Radius.circular(13),
+          _header(),
+          fill
+              ? Expanded(
+                  child: Padding(padding: padding, child: child),
+                )
+              : Padding(padding: padding, child: child),
+        ],
+      ),
+    );
+  }
+
+  Widget _header() {
+    return Container(
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: 16,
+        vertical: 10,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadiusDirectional.vertical(
+          top: Radius.circular(13),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: AppColors.primaryForeground,
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: AppColors.primaryForeground,
-                    ),
-                  ),
-                ),
-                ?trailing,
-              ],
-            ),
           ),
-          Expanded(
-            child: Padding(padding: padding, child: child),
-          ),
+          ?trailing,
         ],
       ),
     );

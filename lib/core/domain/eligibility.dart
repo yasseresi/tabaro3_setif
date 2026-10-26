@@ -1,4 +1,3 @@
-
 /// Pure eligibility math per CWTS Sétif rules:
 /// 3 calendar months for men (M), 4 for women (F), computed from
 /// max(lastDonation, lastTest), with end-of-month clamping.

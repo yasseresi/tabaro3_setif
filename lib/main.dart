@@ -44,7 +44,9 @@ Future<void> main() async {
     await _logCrash('startup: begin v${AppEnv.version}');
 
     await windowManager.ensureInitialized();
+    await _logCrash('startup: windowManager ready');
     await NotificationService.init();
+    await _logCrash('startup: notifications ready');
 
     const windowOptions = WindowOptions(
       size: Size(1280, 800),

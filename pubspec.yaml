@@ -1,0 +1,57 @@
+name: tabaro3_setif
+description: "Gestion des donneurs de sang - CWTS Setif (Centre de Wilaya de Transfusion Sanguine)."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Local database (offline SQLite)
+  drift: ^2.35.3
+  sqlite3_flutter_libs: ^0.5.32
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  # Excel / CSV
+  excel: ^4.0.6
+  csv: ^6.0.0
+  # Files & archives
+  file_picker: ^13.3.0
+  archive: ^3.6.1
+  # PDF & printing
+  pdf: ^3.11.3
+  printing: 5.14.2
+  # Images (donor photo resizing)
+  image: ^4.3.0
+  # Utils
+  crypto: ^3.0.6
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  lucide_icons_flutter: ^4.0.1
+  window_manager: ^0.5.1
+  local_notifier: ^0.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.35.2
+  build_runner: ^2.7.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cairo-ExtraBold.ttf
+          weight: 800

@@ -1,72 +1,69 @@
-# Tabaro3 Sétif — Blood Donor Management (CWTS Sétif)
+# برنامج إدارة المتبرعين بالدم – المركز الولائي لحقن الدم سطيف
 
-> **برنامج إدارة المتبرعين بالدم — المركز الولائي لحقن الدم سطيف**  
-> **Gestion des donneurs de sang — Centre de Wilaya de Transfusion Sanguine, Sétif**
+**Gestion des donneurs de sang — Centre de Wilaya de Transfusion Sanguine (CWTS) Sétif**
 
-An offline-first desktop application for managing blood donors at the CWTS Sétif transfusion centre. Built for real clinic reception desks: no internet required, no server, no cloud — just a local database and a printable donor card.
+Offline-first **Windows desktop app** (Flutter) for managing blood donors, eligibility
+reminders (3 months for men / 4 months for women), Excel import/export, printable
+donor cards and the official **CSW « Fiche Donneur de Sang »** form (ANS/COL/FIC02/V01/22).
 
----
-
-## Status
-
-**Design & specification phase.** The application is being specified before implementation. This repository will hold the Flutter desktop application, its Windows installer pipeline, and the release artifacts.
+Bilingual: **Arabic (RTL, default)** & **French (LTR)** with instant direction switching.
 
 ---
 
-## Planned Features
+## Features
 
-| Area | Scope |
+| Area | What it does |
 | :--- | :--- |
-| **Donor records** | Create, edit, search and filter donors (name, gender, blood group, phone, address, birth date, notes, photo). |
-| **Eligibility tracking** | Next-eligible date computed from the most recent donation or blood test, using the medical rule of **3 months for men** and **4 months for women**, with end-of-month clamping. |
-| **Donation history** | Every donation and blood test is logged as an event instead of overwriting the last date, so a donor's full history is preserved. |
-| **Reminders** | A worklist of donors who are eligible now or become eligible within 7 days, with a one-click "donated today" action and desktop notifications. |
-| **Printing** | Printable A4/A5 donor card generated as a PDF, with correct Arabic text shaping, printable directly or saved as a PDF file. |
-| **Excel import / export** | Two-sheet `.xlsx` export (donors + history) and a smart-merge import that matches existing donors by phone number instead of duplicating rows. |
-| **Backup & migration** | One-click `.zip` backup and restore of the full system (database + photos) for moving between clinic computers. |
-| **Bilingual UI** | Full Arabic (RTL, default) and French (LTR) interface with an instant language switch. |
+| **Login** | Single local admin (`admin` / `admin`), salted SHA-256 hash, editable in Settings. |
+| **Dashboard** | KPIs (total / eligible now / eligible this week), blood-group chart, recent donors. |
+| **Donors** | Search, filter by group & status, paginated table (10/page), edit / delete. |
+| **Donor form** | Full identity (name, maiden name, birth date, home & work addresses, e-mails, phones), photo (resized JPEG on disk, never Base64 in DB), live eligibility preview, donation history. |
+| **Alerts** | Donors `due` or `soon`, most overdue first; call helper (copies phone + big display) and one-click **"Mark Donated Today"** (records history in one SQLite transaction). |
+| **Import / Export** | Smart-merge Excel import (match by phone, else name+group; never duplicates), 2-sheet export (`Donneurs` + `Historique`), empty template, **full `.zip` backup/restore** (DB + photos, `VACUUM INTO` snapshot). |
+| **Printing** | Bilingual donor card PDF + the official **CSW Fiche Donneur de Sang** (identity block, donation table: Date / N° / TA / Poids / Type de don / Bilan / Contre-indications, ABO-Rhésus-Phénotype block), blank or pre-filled. |
+| **Safety** | Automatic timestamped `.zip` backup before every destructive action (bulk import, restore, reset) + password gate + rolling prune (keep 10). |
+
+### Eligibility rule (locked)
+
+- Reference date = `max(lastDonation, lastTest)`.
+- Next eligible = reference + **3 calendar months (M)** / **4 calendar months (F)**,
+  with end-of-month clamping (`Nov 30 + 3m → Feb 28`).
+- Statuses: `due` (eligible), `soon` (≤ 7 days), `wait`, `none`.
 
 ---
 
-## Planned Stack
+## Data storage (never in `Program Files`)
 
-- **Flutter Desktop** — native Windows build, developed on macOS, packaged as `.exe` / `.msi` through GitHub Actions.
-- **Drift (SQLite)** — local, reactive, transactional storage. All data stays on the clinic computer.
-- **PDF + printing** — native print dialog and save-as-PDF.
-- **Bilingual fonts bundled offline** — no runtime font downloads.
+All mutable data lives in the OS Application Support directory:
 
-### Data location
+- **Windows**: `%APPDATA%\CWTS_Setif\tabaro3_setif\{tabaro3_setif.sqlite, photos\, backups\}`
+- **macOS (dev)**: `~/Library/Application Support/com.cwtssetif.tabaro3Setif/CWTS_Setif/tabaro3_setif/`
 
-All mutable data lives in the OS application-data directory, never next to the executable:
+SQLite with **WAL mode + foreign keys ON**; donor photos stored as resized files
+(`photos/<id>.jpg`, ≤ 600px), only the filename in the DB.
 
+## Releases (beta & stable channels)
+
+| Channel | Branch | Artifact | Data folder |
+| :--- | :--- | :--- | :--- |
+| Beta (Pre-release) | `beta` | `Tabaro3_Setif_Beta_Setup_vX.Y.Z-beta.N.exe` | `tabaro3_setif_beta` |
+| Stable (Latest) | `main` | `Tabaro3_Setif_Setup_vX.Y.Z.exe` | `tabaro3_setif` |
+
+Pushing to `beta` or `main` triggers **GitHub Actions**: analyze → test →
+`flutter build windows --release` → bundle VC++ runtime DLLs → Inno Setup `.exe` →
+GitHub Release. Beta and stable install side-by-side and never share data.
+
+## Development
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs   # after editing Drift tables
+flutter run -d macos        # develop on macOS
+flutter analyze && flutter test
+flutter build windows --release
 ```
-%APPDATA%\CWTS_Setif\tabaro3_setif\
-├── tabaro3_setif.sqlite    # database
-├── photos\                 # resized donor photos
-└── backups\                # automatic backups taken before destructive actions
-```
 
----
+Docs: [`docs/`](docs/) — spec (`UI_AND_DOMAIN_SPEC.md`), stack, architecture,
+best practices, guardrails, release/versioning.
 
-## Releases
-
-Two release channels will be published here:
-
-| Channel | Version | Description |
-| :--- | :--- | :--- |
-| **Stable** | `vX.Y.Z` | Verified builds for production clinic use. |
-| **Beta** | `vX.Y.Z-beta.N` | Pre-release builds with an isolated database folder, safe to install side by side with Stable. |
-
-Windows installers are built and published automatically from GitHub Actions.
-
----
-
-## License
-
-Released under the [MIT License](LICENSE).
-
----
-
-## Disclaimer
-
-This software is a records-management tool. It does not provide medical advice and does not replace clinical judgement or official transfusion-centre procedures.
+License: see [LICENSE](LICENSE).

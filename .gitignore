@@ -1,3 +1,24 @@
-docs/
-AGENTS.md
-CLAUDE.md
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+# pubspec.lock IS committed: reproducible builds for a desktop app (Flutter recommends it).
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# graphify code graph (regeneratable via `graphify update .`)
+graphify-out/
+
+# Drift generated files are committed (reproducible builds):
+# lib/data/app_database.g.dart stays in git.
+
+# Local test artifacts
+*.log

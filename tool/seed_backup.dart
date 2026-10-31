@@ -135,6 +135,6 @@ Future<void> main(List<String> args) async {
   await zip.close();
   work.deleteSync(recursive: true);
   stdout.writeln(
-    'Wrote \$out with \$count donors. After restoring, log in with admin / admin (you will be asked to set a new password).',
+    'Wrote $out with $count donors. After restoring, log in with admin / admin (you will be asked to set a new password).',
   );
 }

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 
 import '../../data/app_database.dart';
 import 'storage_paths.dart';
@@ -9,10 +9,10 @@ import 'storage_paths.dart';
 /// plus automatic pre-destructive snapshots with rolling pruning.
 ///
 /// Restore orchestration (screen layer):
-/// 1. `exportBackup()` / `autoBackup()` while the DB is open (uses VACUUM INTO),
+/// 1. `validateBackup()` + `autoBackup()` while the DB is open,
 /// 2. `await db.close()` in the app layer,
 /// 3. `restoreFiles()` (pure file swap),
-/// 4. reopen a fresh AppDatabase.
+/// 4. reopen a fresh AppDatabase (also when step 3 fails).
 class BackupService {
   final AppDatabase db;
   final StoragePaths paths;
@@ -29,25 +29,30 @@ class BackupService {
             '${stamp.year}-${two(stamp.month)}-${two(stamp.day)}_'
             '${two(stamp.hour)}${two(stamp.minute)}${two(stamp.second)}.zip';
 
-    final bytes = await buildBackupArchive();
-    await File(target).writeAsBytes(bytes);
+    await writeBackupTo(target);
     return target;
   }
 
-  /// Builds the full backup archive in memory (DB snapshot + photos).
-  Future<List<int>> buildBackupArchive() async {
+  /// Streams the full backup (DB snapshot + photos) straight to [target] on
+  /// disk, so memory stays flat however many photos exist.
+  Future<void> writeBackupTo(String target) async {
     final tmp = File('${paths.root.path}/vacuum_tmp.sqlite');
     if (await tmp.exists()) await tmp.delete();
     await db.customStatement('VACUUM INTO ?', [tmp.path]);
-
-    final archive = Archive();
-    final dbBytes = await tmp.readAsBytes();
-    archive.addFile(
-      ArchiveFile('tabaro3_setif.sqlite', dbBytes.length, dbBytes),
-    );
-    await tmp.delete();
-    await _addPhotos(archive, 'photos/');
-    return ZipEncoder().encode(archive);
+    final zip = ZipFileEncoder()..create(target);
+    try {
+      await zip.addFile(tmp, 'tabaro3_setif.sqlite');
+      if (await paths.photos.exists()) {
+        await for (final f in paths.photos.list()) {
+          if (f is File) {
+            await zip.addFile(f, 'photos/${f.uri.pathSegments.last}');
+          }
+        }
+      }
+    } finally {
+      await zip.close();
+      await tmp.delete();
+    }
   }
 
   /// Silent auto snapshot in backups/ + prune to last 10. Returns the path.
@@ -64,18 +69,6 @@ class BackupService {
     return target;
   }
 
-  Future<void> _addPhotos(Archive archive, String prefix) async {
-    if (!await paths.photos.exists()) return;
-    await for (final f in paths.photos.list()) {
-      if (f is File) {
-        final bytes = await f.readAsBytes();
-        archive.addFile(
-          ArchiveFile('$prefix${f.uri.pathSegments.last}', bytes.length, bytes),
-        );
-      }
-    }
-  }
-
   Future<void> _pruneBackups() async {
     final files =
         (await paths.backups.list().toList())
@@ -88,29 +81,62 @@ class BackupService {
     }
   }
 
-  /// Validates + extracts the archive, then swaps DB file & photos.
-  /// Call only AFTER the database connection has been closed.
-  /// Returns the number of restored photo files.
-  Future<int> restoreFiles(String zipPath) async {
-    final file = File(zipPath);
-    if (!await file.exists()) {
-      throw Exception('backup file not found');
+  /// Checks that [zipPath] holds a usable donor database, without touching
+  /// the live files. Call BEFORE closing the DB; throws on a bad archive.
+  Future<void> validateBackup(String zipPath) async {
+    final dbEntry = await _dbEntry(zipPath);
+    final tmp = File('${paths.root.path}/validate_tmp.sqlite');
+    await tmp.writeAsBytes(dbEntry.content);
+    final probe = AppDatabase(tmp.path);
+    try {
+      await probe.getAppSettings();
+      await probe.getAllDonors();
+    } catch (_) {
+      throw Exception('invalid backup archive');
+    } finally {
+      await probe.close();
+      for (final s in ['', '-wal', '-shm']) {
+        final f = File('${tmp.path}$s');
+        if (await f.exists()) await f.delete();
+      }
     }
-    final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
-    final dbEntry = archive.files
+  }
+
+  Future<ArchiveFile> _dbEntry(String zipPath) async {
+    final file = File(zipPath);
+    if (!await file.exists()) throw Exception('backup file not found');
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBytes(await file.readAsBytes());
+    } catch (_) {
+      throw Exception('invalid backup archive');
+    }
+    final entry = archive.files
         .where((f) => f.name.endsWith('.sqlite'))
         .firstOrNull;
-    if (dbEntry == null || dbEntry.content.length < 100) {
+    if (entry == null ||
+        entry.content.length < 100 ||
+        !String.fromCharCodes(
+          entry.content.sublist(0, 15),
+        ).startsWith('SQLite format 3')) {
       throw Exception('invalid backup archive');
     }
-    final header = String.fromCharCodes(dbEntry.content.sublist(0, 15));
-    if (!header.startsWith('SQLite format 3')) {
-      throw Exception('invalid backup archive');
-    }
+    return entry;
+  }
 
-    // Swap DB file.
+  /// Swaps DB file & photos from an archive already checked by
+  /// [validateBackup]. Call only AFTER the database connection was closed.
+  /// Returns the number of restored photo files.
+  Future<int> restoreFiles(String zipPath) async {
+    final archive = ZipDecoder().decodeBytes(await File(zipPath).readAsBytes());
+    final dbEntry = await _dbEntry(zipPath);
+
+    // Swap DB file (stale WAL/SHM from the old DB must not be replayed).
     final target = File(paths.dbFile);
-    if (await target.exists()) await target.delete();
+    for (final s in ['', '-wal', '-shm']) {
+      final f = File('${target.path}$s');
+      if (await f.exists()) await f.delete();
+    }
     await target.writeAsBytes(dbEntry.content);
 
     // Swap photos.

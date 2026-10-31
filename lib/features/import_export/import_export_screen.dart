@@ -192,6 +192,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         workEmail: '',
         phenotype: '',
         birthDate: '',
+        birthPlace: '',
         lastDonation: '',
         lastTest: '',
         notes: '',
@@ -320,13 +321,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       String two(int v) => v.toString().padLeft(2, '0');
       final suggested =
           'cwts_setif_backup_${now.year}-${two(now.month)}-${two(now.day)}.zip';
-      final bytes = await _backup.buildBackupArchive();
       final target = await FilePicker.saveFile(
         dialogTitle: suggested,
         fileName: suggested,
-        bytes: Uint8List.fromList(bytes),
+        // Placeholder only: the real archive is streamed to disk below.
+        bytes: Uint8List(0),
       );
       if (target == null) return;
+      await _backup.writeBackupTo(target.toFilePath());
       _snack(t('backupDone'));
     } catch (e) {
       _snack('${t('errorOccurred')}: $e');
@@ -366,13 +368,18 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         allowedExtensions: ['zip'],
       );
       if (picked?.path == null) return;
+      // Reject bad archives while the live DB is still open and untouched.
+      await _backup.validateBackup(picked!.path!);
       // Safety snapshot first (DB still open).
       await _backup.autoBackup(prefix: 'pre_restore');
       // Close DB, swap files, reopen (AppState callback remounts the UI).
-      final db = widget.state.db;
-      await db.close();
-      await _backup.restoreFiles(picked!.path!);
-      await widget.state.databaseReplaced();
+      await widget.state.db.close();
+      try {
+        await _backup.restoreFiles(picked.path!);
+      } finally {
+        // Always reopen, even when the swap failed half-way.
+        await widget.state.databaseReplaced();
+      }
       _snack(t('restoreDone'));
     } catch (e) {
       _snack('${t('errorOccurred')}: $e');

@@ -134,8 +134,8 @@ const Map<String, ({String ar, String fr})> _dict = {
     fr: 'La date ne peut pas être dans le futur',
   ),
   'invalidPhone': (
-    ar: 'أدخل رقم هاتف صحيحاً (من 7 إلى 15 رقماً)',
-    fr: 'Saisissez un numéro valide (7 à 15 chiffres)',
+    ar: 'رقم الهاتف يجب أن يتكون من 10 أرقام',
+    fr: 'Le numéro doit comporter 10 chiffres',
   ),
   'invalidEmail': (
     ar: 'أدخل بريداً إلكترونياً صحيحاً',

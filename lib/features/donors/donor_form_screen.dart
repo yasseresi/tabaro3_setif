@@ -309,6 +309,7 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
             TextFormField(
               controller: _birth,
               textDirection: TextDirection.ltr,
+              inputFormatters: [_DateInputFormatter()],
               decoration: _dateDecoration(_birth, birth: true),
               validator: _dateValidator,
             ),
@@ -321,12 +322,11 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
             TextFormField(
               controller: _phone,
               textDirection: TextDirection.ltr,
-              maxLength: 15,
+              maxLength: 10,
+              keyboardType: TextInputType.number,
               decoration: const InputDecoration(counterText: ''),
               validator: _phoneValidator,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d+\s]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
             _label(t('email')),
             TextFormField(
@@ -522,6 +522,7 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   Widget _dateField(TextEditingController c) => TextFormField(
     controller: c,
     textDirection: TextDirection.ltr,
+    inputFormatters: [_DateInputFormatter()],
     decoration: _dateDecoration(c),
     onChanged: (_) => setState(() {}),
     validator: _dateValidator,
@@ -557,13 +558,7 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   String? _phoneValidator(String? value) {
     final phone = value?.trim() ?? '';
     if (phone.isEmpty) return null;
-    final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 7 ||
-        digits.length > 15 ||
-        (phone.contains('+') && !phone.startsWith('+')) ||
-        '+'.allMatches(phone).length > 1) {
-      return t('invalidPhone');
-    }
+    if (!RegExp(r'^\d{10}$').hasMatch(phone)) return t('invalidPhone');
     return null;
   }
 
@@ -782,4 +777,34 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
 
   // (kept minimal: TA/poids/type/bilan are captured via recordEvent dialog
   // from the Alerts screen "Mark Donated Today" flow)
+}
+
+/// Types DD/MM/YYYY for the user: digits only, slashes inserted after the
+/// day and month, so the cursor moves day -> month -> year by itself.
+class _DateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    // Backspace over an auto-inserted '/' would otherwise be undone: drop the
+    // digit before it instead.
+    if (newValue.text.length < oldValue.text.length &&
+        digits == oldValue.text.replaceAll(RegExp(r'\D'), '') &&
+        digits.isNotEmpty) {
+      digits = digits.substring(0, digits.length - 1);
+    }
+    if (digits.length > 8) digits = digits.substring(0, 8);
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i == 2 || i == 4) buf.write('/');
+      buf.write(digits[i]);
+    }
+    final text = buf.toString();
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }

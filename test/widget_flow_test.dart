@@ -102,13 +102,16 @@ void main() {
     expect(await db.getAllDonors(), isEmpty);
   });
 
-  testWidgets('donor form: calendar button fills the date field',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+  testWidgets('donor form: calendar button fills the date field', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     final birthField = find.byType(TextField).at(2);
@@ -121,7 +124,46 @@ void main() {
     expect(tester.widget<TextField>(birthField).controller!.text, isNotEmpty);
   });
 
+  testWidgets('donor form: dates auto-format and phone needs 10 digits', (
+    tester,
+  ) async {
+    // Desktop-sized window: the default 800x600 test surface hides Save.
+    tester.view.physicalSize = const Size(1280, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(2), '15032020');
+    expect(
+      tester.widget<TextField>(fields.at(2)).controller!.text,
+      '15/03/2020',
+    );
+    await tester.enterText(fields.at(5), '055123456'); // 9 digits
+    await tester.enterText(fields.at(0), 'ياسين');
+    await tester.tap(find.text('O+'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    expect(find.text(tr('ar', 'invalidPhone')), findsOneWidget);
+
+    await db.close();
+  });
+
   testWidgets('donor form: full save flow persists a donor', (tester) async {
+    // Desktop-sized window: the default 800x600 test surface hides Save.
+    tester.view.physicalSize = const Size(1280, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -135,6 +177,8 @@ void main() {
     // Pick blood group O+
     await tester.tap(find.text('O+'));
     await tester.pumpAndSettle();
+    // Typing in a far field scrolls the form, so fill it after picking O+.
+    await tester.enterText(find.byType(TextField).at(5), '0551234567');
     await tester.ensureVisible(find.text('حفظ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
@@ -146,6 +190,7 @@ void main() {
     expect(donors.first.name, 'ياسين عماري');
     expect(donors.first.bloodGroup, 'O+');
     expect(donors.first.gender, 'M');
+    expect(donors.first.phone, '0551234567');
 
     // After saving, the history card subscribes to a Drift stream; closing
     // the DB here flushes Drift's internal cache timer before the tree is

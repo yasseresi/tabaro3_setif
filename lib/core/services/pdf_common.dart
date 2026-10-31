@@ -73,58 +73,57 @@ class PdfCommon {
           'C ${cx + r} ${cy + k} ${cx + k} ${cy + r} $cx ${cy + r} Z',
         )
         ..fillPath();
-      // Red crescent = big red circle minus offset white circle
-      final mx = w * 0.42, my = h * 0.5, cr = h * 0.30;
-      canvas
-        ..setFillColor(const PdfColor.fromInt(0xFFD21034))
-        ..drawEllipse(mx, my, cr, cr)
-        ..fillPath()
-        ..setFillColor(PdfColors.white)
-        ..drawEllipse(mx + cr * 0.30, my, cr * 0.80, cr * 0.80)
-        ..fillPath();
-      // 5-point star
-      canvas.setFillColor(const PdfColor.fromInt(0xFFD21034));
-      final sx = mx + cr * 0.78, srad = h * 0.10;
+      // Crescent (outer disc minus inner disc) + star, official proportions.
+      const red = PdfColor.fromInt(0xFFD21034);
+      canvas.setFillColor(red);
+      const n = 48, phi = 0.6751; // inner-disc tip angle
+      final ix = 0.5605 * w, ir = 0.2 * w, or = 0.25 * w;
+      for (var i = 0; i <= n; i++) {
+        final a = -math.pi / 6 - (5 * math.pi / 3) * i / n;
+        final x = cx + or * math.cos(a), y = cy + or * math.sin(a);
+        i == 0 ? canvas.moveTo(x, y) : canvas.lineTo(x, y);
+      }
+      for (var i = 0; i <= n; i++) {
+        final a = phi + (2 * math.pi - 2 * phi) * i / n;
+        canvas.lineTo(ix + ir * math.cos(a), cy + ir * math.sin(a));
+      }
+      canvas.fillPath();
+      final sx = 0.6011 * w, srad = 0.125 * w;
       for (var i = 0; i < 10; i++) {
-        final radius = i.isEven ? srad : srad * 0.42;
-        final a = -math.pi / 2 + i * math.pi / 5;
-        final px = sx + radius * math.cos(a), py = my + radius * math.sin(a);
-        if (i == 0) {
-          canvas.moveTo(px, py);
-        } else {
-          canvas.lineTo(px, py);
-        }
+        final radius = i.isEven ? srad : srad * 0.382;
+        final a = i * math.pi / 5;
+        final px = sx + radius * math.cos(a), py = cy + radius * math.sin(a);
+        i == 0 ? canvas.moveTo(px, py) : canvas.lineTo(px, py);
       }
       canvas.fillPath();
     },
   );
 
-  /// Crimson blood-drop-with-heart emblem.
+  /// Crimson blood-drop-with-heart emblem (same shape as the on-screen logo).
   static pw.Widget dropEmblem({double size = 36}) => pw.CustomPaint(
     size: PdfPoint(size * 0.82, size),
     painter: (PdfGraphics canvas, PdfPoint sz) {
       final w = sz.x, h = sz.y;
-      // Teardrop silhouette (SVG path in widget coords)
-      final d =
-          'M ${(w * 0.5).toStringAsFixed(0)} $h '
-          'C ${w * 0.95} ${h * 0.62} $w ${h * 0.52} $w ${h * 0.34} '
-          'C $w ${h * 0.13} ${w * 0.78} 0 ${(w * 0.5).toStringAsFixed(0)} 0 '
-          'C ${w * 0.22} 0 0 ${h * 0.13} 0 ${h * 0.34} '
-          'C 0 ${h * 0.52} ${w * 0.05} ${h * 0.62} ${(w * 0.5).toStringAsFixed(0)} $h Z';
+      // Shapes are written in screen coords (y down); `y()` flips for PDF.
+      String pt(double x, double y) => '$x ${h - y}';
+      final drop =
+          'M ${pt(w * 0.5, 0)} '
+          'C ${pt(w * 0.62, h * 0.18)} ${pt(w, h * 0.42)} ${pt(w, h * 0.66)} '
+          'C ${pt(w, h * 0.86)} ${pt(w * 0.78, h)} ${pt(w * 0.5, h)} '
+          'C ${pt(w * 0.22, h)} ${pt(0, h * 0.86)} ${pt(0, h * 0.66)} '
+          'C ${pt(0, h * 0.42)} ${pt(w * 0.38, h * 0.18)} ${pt(w * 0.5, 0)} Z';
       canvas
         ..setFillColor(const PdfColor.fromInt(0xFFD92638))
-        ..drawShape(d)
+        ..drawShape(drop)
         ..fillPath();
-      // White heart centered in lower half: two lobes + triangle body
+      final cx = w * 0.5, cy = h * 0.68, u = w * 0.24;
+      final heart =
+          'M ${pt(cx, cy + u * 0.95)} '
+          'C ${pt(cx - u * 1.5, cy - u * 0.05)} ${pt(cx - u * 0.9, cy - u * 1.1)} ${pt(cx, cy - u * 0.4)} '
+          'C ${pt(cx + u * 0.9, cy - u * 1.1)} ${pt(cx + u * 1.5, cy - u * 0.05)} ${pt(cx, cy + u * 0.95)} Z';
       canvas
         ..setFillColor(PdfColors.white)
-        ..drawEllipse(w * 0.30, h * 0.52, w * 0.22, h * 0.09)
-        ..fillPath()
-        ..drawEllipse(w * 0.70, h * 0.52, w * 0.22, h * 0.09)
-        ..fillPath()
-        ..drawShape(
-          'M ${w * 0.19} ${h * 0.54} L ${w * 0.81} ${h * 0.54} L ${(w * 0.5).toStringAsFixed(0)} ${h * 0.76} Z',
-        )
+        ..drawShape(heart)
         ..fillPath();
     },
   );

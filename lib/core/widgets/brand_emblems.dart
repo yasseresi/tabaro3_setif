@@ -33,52 +33,39 @@ class AlgerianEmblem extends StatelessWidget {
 }
 
 class _FlagPainter extends CustomPainter {
+  // Geometry of the official 900x600 flag, cropped to its central circle:
+  // green hoist half, white fly half, red crescent centred on the seam with
+  // the star (one tip pointing right) inside its mouth.
+  static const _red = Color(0xFFD21034);
+
   @override
   void paint(Canvas canvas, Size size) {
     final s = size.width;
-    final rect = Offset.zero & size;
+    Offset at(double x, double y) => Offset(x * s, y * s);
 
-    // White face + green half
-    canvas.drawCircle(rect.center, s / 2, Paint()..color = Colors.white);
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, s / 2, s));
-    canvas.drawCircle(
-      rect.center,
-      s / 2,
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, s / 2, s),
       Paint()..color = const Color(0xFF006233),
     );
-    canvas.restore();
 
-    // Red crescent = big red circle minus offset white circle
-    final cx = s * 0.42, cy = s * 0.5, r = s * 0.30;
-    canvas.save();
-    canvas.clipRRect(
-      RRect.fromRectAndRadius(rect, Radius.circular(s / 2)),
-      doAntiAlias: true,
+    final crescent = Path.combine(
+      PathOperation.difference,
+      Path()..addOval(Rect.fromCircle(center: at(0.5, 0.5), radius: 0.25 * s)),
+      Path()
+        ..addOval(Rect.fromCircle(center: at(0.5605, 0.5), radius: 0.2 * s)),
     );
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r,
-      Paint()..color = const Color(0xFFD21034),
-    );
-    canvas.drawCircle(
-      Offset(cx + r * 0.32, cy),
-      r * 0.82,
-      Paint()..color = Colors.white,
-    );
-    canvas.restore();
+    canvas.drawPath(crescent, Paint()..color = _red);
 
-    // Red star
     final star = Path();
-    final sx = cx + r * 0.82, sy = cy, outer = s * 0.11, inner = outer * 0.42;
+    final c = at(0.6011, 0.5);
     for (var i = 0; i < 10; i++) {
-      final radius = i.isEven ? outer : inner;
-      final a = -math.pi / 2 + i * math.pi / 5;
-      final p = Offset(sx + radius * math.cos(a), sy + radius * math.sin(a));
+      final radius = (i.isEven ? 0.125 : 0.125 * 0.382) * s;
+      final a = i * math.pi / 5;
+      final p = c + Offset(radius * math.cos(a), radius * math.sin(a));
       i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
     }
-    star.close();
-    canvas.drawPath(star, Paint()..color = const Color(0xFFD21034));
+    canvas.drawPath(star..close(), Paint()..color = _red);
   }
 
   @override
@@ -117,22 +104,60 @@ class _DropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
+    // Classic drop: pointed tip on top, round belly below.
     final drop = Path()
-      ..moveTo(w * 0.5, h)
-      ..cubicTo(w * 0.95, h * 0.62, w, h * 0.52, w, h * 0.34)
-      ..cubicTo(w, h * 0.13, w * 0.78, 0, w * 0.5, 0)
-      ..cubicTo(w * 0.22, 0, 0, h * 0.13, 0, h * 0.34)
-      ..cubicTo(0, h * 0.52, w * 0.05, h * 0.62, w * 0.5, h)
+      ..moveTo(w * 0.5, 0)
+      ..cubicTo(w * 0.62, h * 0.18, w, h * 0.42, w, h * 0.66)
+      ..cubicTo(w, h * 0.86, w * 0.78, h, w * 0.5, h)
+      ..cubicTo(w * 0.22, h, 0, h * 0.86, 0, h * 0.66)
+      ..cubicTo(0, h * 0.42, w * 0.38, h * 0.18, w * 0.5, 0)
       ..close();
-    canvas.drawPath(drop, Paint()..color = color);
+    final hsl = HSLColor.fromColor(color);
+    canvas.drawPath(
+      drop,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor(),
+            hsl.withLightness((hsl.lightness - 0.08).clamp(0.0, 1.0)).toColor(),
+          ],
+        ).createShader(Offset.zero & size),
+    );
 
-    // White heart in the lower half
+    // Soft highlight on the left shoulder.
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.2, h * 0.62)
+        ..quadraticBezierTo(w * 0.2, h * 0.46, w * 0.34, h * 0.32),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = w * 0.07
+        ..color = Colors.white.withValues(alpha: 0.35),
+    );
+
+    // Heart centred in the belly.
+    final cx = w * 0.5, cy = h * 0.68, u = w * 0.24;
     final heart = Path()
-      ..moveTo(w * 0.5, h * 0.76)
-      ..cubicTo(w * 0.2, h * 0.55, w * 0.24, h * 0.40, w * 0.38, h * 0.40)
-      ..cubicTo(w * 0.45, h * 0.40, w * 0.49, h * 0.44, w * 0.5, h * 0.47)
-      ..cubicTo(w * 0.51, h * 0.44, w * 0.55, h * 0.40, w * 0.62, h * 0.40)
-      ..cubicTo(w * 0.76, h * 0.40, w * 0.8, h * 0.55, w * 0.5, h * 0.76)
+      ..moveTo(cx, cy + u * 0.95)
+      ..cubicTo(
+        cx - u * 1.5,
+        cy - u * 0.05,
+        cx - u * 0.9,
+        cy - u * 1.1,
+        cx,
+        cy - u * 0.4,
+      )
+      ..cubicTo(
+        cx + u * 0.9,
+        cy - u * 1.1,
+        cx + u * 1.5,
+        cy - u * 0.05,
+        cx,
+        cy + u * 0.95,
+      )
       ..close();
     canvas.drawPath(heart, Paint()..color = heartColor);
   }

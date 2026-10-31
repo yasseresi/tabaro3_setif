@@ -140,8 +140,6 @@ class PdfCardService {
         row('مكان الميلاد', 'Lieu de naissance', d.birthPlace),
         row('العنوان', 'Adresse', d.address),
         row('البريد الإلكتروني', 'E-mail', d.email),
-        row('عنوان مكان العمل', 'Adresse professionnelle', d.workAddress),
-        row('هاتف العمل', 'Téléphone professionnel', d.workPhone),
         row('النمط الظاهري', 'Phénotype', d.phenotype),
         row('آخر تبرع', 'Dernier don', displayDate(d.lastDonation)),
         row('آخر تحليل دم', 'Dernière analyse', displayDate(d.lastTest)),

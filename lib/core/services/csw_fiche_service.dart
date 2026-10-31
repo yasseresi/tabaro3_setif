@@ -158,10 +158,8 @@ class CswFicheService {
           'Né (e) le',
           '${displayDate(d.birthDate)}${d.birthPlace.isEmpty ? '' : ' à ${d.birthPlace}'}',
         ),
-        field('Adresse domicile', d.address),
+        field('Adresse', d.address),
         twoFields('Tél', d.phone, 'E-mail', d.email),
-        field('Adresse professionnelle', d.workAddress),
-        twoFields('Tél', d.workPhone, 'E-mail', d.workEmail),
       ],
     );
   }

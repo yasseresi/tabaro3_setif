@@ -45,7 +45,7 @@ const Map<String, ({String ar, String fr})> _dict = {
   'logout': (ar: 'خروج', fr: 'Déconnexion'),
   'donorInfo': (ar: 'معلومات المتبرع', fr: 'Informations du donneur'),
   'name': (ar: 'الاسم و اللقب', fr: 'Nom et prénom'),
-  'maidenName': (ar: 'اسم الزواج (للنساء)', fr: 'Nom de jeune fille'),
+  'maidenName': (ar: 'اسم العائلة قبل الزواج', fr: 'Nom de jeune fille'),
   'gender': (ar: 'الجنس', fr: 'Sexe'),
   'male': (ar: 'ذكر (3 أشهر)', fr: 'Homme (3 mois)'),
   'female': (ar: 'أنثى (4 أشهر)', fr: 'Femme (4 mois)'),
@@ -55,8 +55,19 @@ const Map<String, ({String ar, String fr})> _dict = {
   'email': (ar: 'البريد الإلكتروني', fr: 'E-mail'),
   'address': (ar: 'العنوان', fr: 'Adresse'),
   'homeAddress': (ar: 'عنوان المسكن', fr: 'Adresse domicile'),
+  'homeContact': (ar: 'بيانات الاتصال بالمسكن', fr: 'Coordonnées du domicile'),
+  'homePhone': (ar: 'هاتف المسكن', fr: 'Téléphone du domicile'),
+  'homeEmail': (ar: 'بريد المسكن الإلكتروني', fr: 'E-mail du domicile'),
   'workAddress': (ar: 'عنوان مكان العمل', fr: 'Adresse professionnelle'),
+  'workContact': (
+    ar: 'بيانات الاتصال بالعمل',
+    fr: 'Coordonnées professionnelles',
+  ),
+  'workPhone': (ar: 'هاتف العمل', fr: 'Téléphone professionnel'),
+  'workEmail': (ar: 'بريد العمل الإلكتروني', fr: 'E-mail professionnel'),
   'birthDate': (ar: 'تاريخ الميلاد', fr: 'Date de naissance'),
+  'birthPlace': (ar: 'مكان الميلاد', fr: 'Lieu de naissance'),
+  'dateHint': (ar: 'يوم/شهر/سنة', fr: 'JJ/MM/AAAA'),
   'lastDonation': (ar: 'آخر تبرع', fr: 'Dernier don'),
   'lastTest': (ar: 'آخر تحليل دم', fr: 'Dernière analyse'),
   'notes': (ar: 'ملاحظة', fr: 'Remarque'),
@@ -109,8 +120,8 @@ const Map<String, ({String ar, String fr})> _dict = {
   'importX': (ar: 'استيراد من Excel', fr: 'Importer depuis Excel'),
   'template': (ar: 'تحميل نموذج فارغ', fr: 'Télécharger un modèle'),
   'importHelp': (
-    ar: 'يجب أن يحتوي الملف على أعمدة: الاسم، الجنس، زمرة الدم، الهاتف، العنوان، تاريخ الميلاد، آخر تبرع، آخر تحليل، ملاحظة',
-    fr: 'Le fichier doit contenir : Nom, Sexe, Groupe, Téléphone, Adresse, Date naissance, Dernier don, Dernière analyse, Remarque',
+    ar: 'يجب أن يحتوي الملف على أعمدة: الاسم، الجنس، زمرة الدم، الهاتف، العنوان، تاريخ الميلاد ومكانه، آخر تبرع، آخر تحليل، ملاحظة',
+    fr: 'Le fichier doit contenir : Nom, Sexe, Groupe, Téléphone, Adresse, date et lieu de naissance, dernier don, dernière analyse, remarque',
   ),
   'imported': (ar: 'تم استيراد', fr: 'Importés :'),
   'exportHelp': (
@@ -123,6 +134,23 @@ const Map<String, ({String ar, String fr})> _dict = {
   'required': (
     ar: 'الاسم وزمرة الدم مطلوبان',
     fr: 'Nom et groupe sanguin requis',
+  ),
+  'requiredField': (ar: 'هذا الحقل مطلوب', fr: 'Ce champ est obligatoire'),
+  'invalidDate': (
+    ar: 'أدخل تاريخاً صحيحاً بصيغة يوم/شهر/سنة',
+    fr: 'Saisissez une date valide au format JJ/MM/AAAA',
+  ),
+  'futureDate': (
+    ar: 'لا يمكن أن يكون التاريخ في المستقبل',
+    fr: 'La date ne peut pas être dans le futur',
+  ),
+  'invalidPhone': (
+    ar: 'أدخل رقم هاتف صحيحاً (من 7 إلى 15 رقماً)',
+    fr: 'Saisissez un numéro valide (7 à 15 chiffres)',
+  ),
+  'invalidEmail': (
+    ar: 'أدخل بريداً إلكترونياً صحيحاً',
+    fr: 'Saisissez une adresse e-mail valide',
   ),
   'account': (ar: 'الحساب', fr: 'Compte'),
   'newPass': (ar: 'كلمة مرور جديدة', fr: 'Nouveau mot de passe'),
@@ -192,6 +220,14 @@ const Map<String, ({String ar, String fr})> _dict = {
     fr: 'Minimum 4 caractères',
   ),
   'confirm': (ar: 'تأكيد', fr: 'Confirmer'),
+  'mustChangePass': (
+    ar: 'كلمة المرور الافتراضية غير آمنة. اختر كلمة مرور جديدة للمتابعة',
+    fr: 'Le mot de passe par défaut n\'est pas sûr. Choisissez-en un nouveau pour continuer',
+  ),
+  'password_min6': (
+    ar: '6 أحرف على الأقل ويجب أن تختلف عن admin',
+    fr: '6 caractères minimum, différent de admin',
+  ),
   'enterPassword': (
     ar: 'أدخل كلمة المرور للمتابعة',
     fr: 'Entrez le mot de passe pour confirmer',
@@ -226,17 +262,9 @@ const Map<String, ({String ar, String fr})> _dict = {
   'day': (ar: 'يوم', fr: 'jour'),
   'days': (ar: 'أيام', fr: 'jours'),
   'noPhoto': (ar: 'بدون صورة', fr: 'Sans photo'),
-  'exportAllFiches': (
-    ar: 'طباعة استمارات CSW للجميع',
-    fr: 'Imprimer toutes les fiches CSW',
-  ),
   'printBlankFiche': (
     ar: 'طباعة استمارة فارغة',
     fr: 'Imprimer une fiche vierge',
-  ),
-  'confirmFiches': (
-    ar: 'سيتم فتح نافذة طباعة تحتوي على استمارة لكل متبرع',
-    fr: 'La fenêtre d\'impression contiendra une fiche par donneur',
   ),
 };
 

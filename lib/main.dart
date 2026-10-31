@@ -21,14 +21,20 @@ import 'features/auth/login_screen.dart';
 Future<void> _logCrash(String message) async {
   final line = '${DateTime.now().toIso8601String()}  $message\n';
   for (final dir in [
-    Directory(p.join((await getApplicationSupportDirectory()).path,
-        'CWTS_Setif', AppEnv.appDataFolderName)),
+    Directory(
+      p.join(
+        (await getApplicationSupportDirectory()).path,
+        'CWTS_Setif',
+        AppEnv.appDataFolderName,
+      ),
+    ),
     Directory.systemTemp,
   ]) {
     try {
       await dir.create(recursive: true);
-      await File(p.join(dir.path, 'tabaro3_crash.log'))
-          .writeAsString(line, mode: FileMode.append);
+      await File(
+        p.join(dir.path, 'tabaro3_crash.log'),
+      ).writeAsString(line, mode: FileMode.append);
       return;
     } catch (_) {
       // try the next fallback location
@@ -48,10 +54,10 @@ Future<void> main() async {
     await NotificationService.init();
     await _logCrash('startup: notifications ready');
 
-    const windowOptions = WindowOptions(
+    final windowOptions = WindowOptions(
       size: Size(1280, 800),
       minimumSize: Size(1024, 680),
-      title: 'Gestion des donneurs de sang – CWTS Sétif',
+      title: AppEnv.appTitle('Gestion des donneurs de sang – CWTS Sétif'),
       center: true,
       titleBarStyle: TitleBarStyle.normal,
     );

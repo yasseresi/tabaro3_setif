@@ -35,9 +35,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _email = TextEditingController();
-  final _workAddress = TextEditingController();
-  final _workPhone = TextEditingController();
-  final _workEmail = TextEditingController();
   final _phenotype = TextEditingController();
   final _birth = TextEditingController();
   final _birthPlace = TextEditingController();
@@ -75,9 +72,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
       _phone.text = d.phone;
       _address.text = d.address;
       _email.text = d.email;
-      _workAddress.text = d.workAddress;
-      _workPhone.text = d.workPhone;
-      _workEmail.text = d.workEmail;
       _phenotype.text = d.phenotype;
       _birth.text = displayDate(d.birthDate);
       _birthPlace.text = d.birthPlace;
@@ -115,9 +109,10 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
         maidenName: _maiden.text.trim(),
         address: _address.text.trim(),
         email: _email.text.trim(),
-        workAddress: _workAddress.text.trim(),
-        workPhone: _workPhone.text.trim(),
-        workEmail: _workEmail.text.trim(),
+        // Work contacts are no longer edited; keep any legacy values.
+        workAddress: existing?.workAddress ?? '',
+        workPhone: existing?.workPhone ?? '',
+        workEmail: existing?.workEmail ?? '',
         phenotype: _phenotype.text.trim(),
         birthDate: normalizeDate(_birth.text),
         birthPlace: _birthPlace.text.trim(),
@@ -193,9 +188,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
       _phone,
       _address,
       _email,
-      _workAddress,
-      _workPhone,
-      _workEmail,
       _phenotype,
       _birth,
       _birthPlace,
@@ -317,16 +309,15 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
             TextFormField(
               controller: _birth,
               textDirection: TextDirection.ltr,
-              decoration: InputDecoration(hintText: t('dateHint')),
+              decoration: _dateDecoration(_birth, birth: true),
               validator: _dateValidator,
             ),
             _label(t('birthPlace')),
             TextFormField(controller: _birthPlace),
             const SizedBox(height: 10),
-            _label(t('homeAddress')),
+            _label(t('address')),
             TextFormField(controller: _address, maxLines: 2, minLines: 1),
-            _label(t('homeContact')),
-            _label(t('homePhone')),
+            _label(t('phone')),
             TextFormField(
               controller: _phone,
               textDirection: TextDirection.ltr,
@@ -337,52 +328,11 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
                 FilteringTextInputFormatter.allow(RegExp(r'[\d+\s]')),
               ],
             ),
-            _label(t('homeEmail')),
+            _label(t('email')),
             TextFormField(
               controller: _email,
               textDirection: TextDirection.ltr,
               validator: _emailValidator,
-            ),
-            const SizedBox(height: 10),
-            _label(t('workContact')),
-            _label(t('workAddress')),
-            TextFormField(controller: _workAddress, maxLines: 2, minLines: 1),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label(t('workPhone')),
-                      TextFormField(
-                        controller: _workPhone,
-                        textDirection: TextDirection.ltr,
-                        maxLength: 15,
-                        decoration: const InputDecoration(counterText: ''),
-                        validator: _phoneValidator,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[\d+\s]')),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label(t('workEmail')),
-                      TextFormField(
-                        controller: _workEmail,
-                        textDirection: TextDirection.ltr,
-                        validator: _emailValidator,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 10),
             Row(
@@ -572,10 +522,37 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   Widget _dateField(TextEditingController c) => TextFormField(
     controller: c,
     textDirection: TextDirection.ltr,
-    decoration: InputDecoration(hintText: t('dateHint')),
+    decoration: _dateDecoration(c),
     onChanged: (_) => setState(() {}),
     validator: _dateValidator,
   );
+
+  InputDecoration _dateDecoration(
+    TextEditingController c, {
+    bool birth = false,
+  }) => InputDecoration(
+    hintText: t('dateHint'),
+    suffixIcon: IconButton(
+      tooltip: t('date'),
+      icon: const Icon(LucideIcons.calendar, size: 16),
+      onPressed: () => _pickDate(c, birth: birth),
+    ),
+  );
+
+  /// Native calendar; typing a date by hand still works.
+  Future<void> _pickDate(TextEditingController c, {bool birth = false}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final typed = DateTime.tryParse(normalizeDate(c.text));
+    final initial = typed ?? (birth ? DateTime(now.year - 30) : today);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(today) ? today : initial,
+      firstDate: DateTime(1900),
+      lastDate: today,
+    );
+    if (picked != null) setState(() => c.text = displayDate(isoDate(picked)));
+  }
 
   String? _phoneValidator(String? value) {
     final phone = value?.trim() ?? '';

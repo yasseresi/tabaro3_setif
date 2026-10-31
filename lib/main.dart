@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -101,6 +102,9 @@ class _Tabaro3AppState extends State<Tabaro3App> {
       builder: (context, _) {
         return MaterialApp(
           title: AppEnv.appTitle(tr(state.lang, 'appName')),
+          locale: Locale(state.lang),
+          supportedLocales: const [Locale('ar'), Locale('fr')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.build(),
           builder: (context, child) {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:tabaro3_setif/core/app_state.dart';
 import 'package:tabaro3_setif/core/resources/app_strings.dart';
 import 'package:tabaro3_setif/core/services/storage_paths.dart';
@@ -99,6 +100,25 @@ void main() {
     expect(find.text(tr('ar', 'invalidEmail')), findsOneWidget);
     expect(find.text(tr('ar', 'invalidDate')), findsOneWidget);
     expect(await db.getAllDonors(), isEmpty);
+  });
+
+  testWidgets('donor form: calendar button fills the date field',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final birthField = find.byType(TextField).at(2);
+    expect(tester.widget<TextField>(birthField).controller!.text, isEmpty);
+    await tester.tap(find.byIcon(LucideIcons.calendar).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(birthField).controller!.text, isNotEmpty);
   });
 
   testWidgets('donor form: full save flow persists a donor', (tester) async {

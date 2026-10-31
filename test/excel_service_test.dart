@@ -30,6 +30,7 @@ void main() {
         workEmail: '',
         phenotype: '',
         birthDate: '1990-05-10',
+        birthPlace: 'Sétif',
         lastDonation: '2026-07-01',
         lastTest: '',
         notes: '',

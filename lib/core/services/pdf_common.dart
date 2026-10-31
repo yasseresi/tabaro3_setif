@@ -15,12 +15,17 @@ class PdfCommon {
   /// Windows: native print dialog via `printing` (the clinic's platform).
   /// macOS: open in Preview — its print dialog is the native macOS way
   /// (`Printing.layoutPdf`'s WKWebView dialog is unreliable there).
-  static Future<void> printPdf(pw.Document pdf, {String name = 'tabaro3'}) async {
+  static Future<void> printPdf(
+    pw.Document pdf, {
+    String name = 'tabaro3',
+  }) async {
     final bytes = await pdf.save();
     if (Platform.isMacOS) {
       final file = File(
-        p.join(Directory.systemTemp.path,
-            '${name}_${DateTime.now().millisecondsSinceEpoch}.pdf'),
+        p.join(
+          Directory.systemTemp.path,
+          '${name}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        ),
       );
       await file.writeAsBytes(bytes);
       await Process.run('open', [file.path]);
@@ -80,9 +85,10 @@ class PdfCommon {
       // 5-point star
       canvas.setFillColor(const PdfColor.fromInt(0xFFD21034));
       final sx = mx + cr * 0.78, srad = h * 0.10;
-      for (var i = 0; i < 5; i++) {
-        final a = -math.pi / 2 + i * 4 * math.pi / 5;
-        final px = sx + srad * math.cos(a), py = my + srad * math.sin(a);
+      for (var i = 0; i < 10; i++) {
+        final radius = i.isEven ? srad : srad * 0.42;
+        final a = -math.pi / 2 + i * math.pi / 5;
+        final px = sx + radius * math.cos(a), py = my + radius * math.sin(a);
         if (i == 0) {
           canvas.moveTo(px, py);
         } else {

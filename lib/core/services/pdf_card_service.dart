@@ -137,6 +137,7 @@ class PdfCardService {
         row('زمرة الدم', 'Groupe sanguin', d.bloodGroup),
         row('رقم الهاتف', 'Téléphone', d.phone),
         row('تاريخ الميلاد', 'Date de naissance', displayDate(d.birthDate)),
+        row('مكان الميلاد', 'Lieu de naissance', d.birthPlace),
         row('العنوان', 'Adresse', d.address),
         row('البريد الإلكتروني', 'E-mail', d.email),
         row('عنوان مكان العمل', 'Adresse professionnelle', d.workAddress),

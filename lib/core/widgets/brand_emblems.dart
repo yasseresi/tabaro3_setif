@@ -70,10 +70,11 @@ class _FlagPainter extends CustomPainter {
 
     // Red star
     final star = Path();
-    final sx = cx + r * 0.82, sy = cy, srad = s * 0.11;
-    for (var i = 0; i < 5; i++) {
-      final a = -math.pi / 2 + i * 4 * math.pi / 5;
-      final p = Offset(sx + srad * math.cos(a), sy + srad * math.sin(a));
+    final sx = cx + r * 0.82, sy = cy, outer = s * 0.11, inner = outer * 0.42;
+    for (var i = 0; i < 10; i++) {
+      final radius = i.isEven ? outer : inner;
+      final a = -math.pi / 2 + i * math.pi / 5;
+      final p = Offset(sx + radius * math.cos(a), sy + radius * math.sin(a));
       i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
     }
     star.close();
@@ -88,24 +89,30 @@ class _FlagPainter extends CustomPainter {
 class BloodDropLogo extends StatelessWidget {
   final double size;
   final Color color;
+  final Color? heartColor;
   const BloodDropLogo({
     super.key,
     this.size = 48,
     this.color = AppColors.blood,
+    this.heartColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(size * 0.82, size),
-      painter: _DropPainter(color: color),
+      painter: _DropPainter(
+        color: color,
+        heartColor: heartColor ?? Colors.white,
+      ),
     );
   }
 }
 
 class _DropPainter extends CustomPainter {
   final Color color;
-  _DropPainter({required this.color});
+  final Color heartColor;
+  _DropPainter({required this.color, required this.heartColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -127,10 +134,10 @@ class _DropPainter extends CustomPainter {
       ..cubicTo(w * 0.51, h * 0.44, w * 0.55, h * 0.40, w * 0.62, h * 0.40)
       ..cubicTo(w * 0.76, h * 0.40, w * 0.8, h * 0.55, w * 0.5, h * 0.76)
       ..close();
-    canvas.drawPath(heart, Paint()..color = Colors.white);
+    canvas.drawPath(heart, Paint()..color = heartColor);
   }
 
   @override
   bool shouldRepaint(covariant _DropPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.heartColor != heartColor;
 }

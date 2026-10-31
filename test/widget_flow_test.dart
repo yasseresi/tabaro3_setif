@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabaro3_setif/core/app_state.dart';
+import 'package:tabaro3_setif/core/resources/app_strings.dart';
 import 'package:tabaro3_setif/core/services/storage_paths.dart';
 import 'package:tabaro3_setif/data/app_database.dart';
 import 'package:tabaro3_setif/features/auth/login_screen.dart';
@@ -16,20 +17,24 @@ void main() {
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     state = AppState(
-        db: db,
-        paths: _FakePaths(),
-        settings: _settingRow(db: db));
+      db: db,
+      paths: _FakePaths(),
+      settings: _settingRow(db: db),
+    );
   });
 
   tearDown(() async {
     await db.close();
   });
 
-  testWidgets('login screen: bad credentials show error, good ones succeed',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: LoginScreen(state: state, onSuccess: () {}),
-    ));
+  testWidgets('login screen: bad credentials show error, good ones succeed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginScreen(state: state, onSuccess: () {}),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'admin');
@@ -46,33 +51,64 @@ void main() {
     expect(find.text('اسم المستخدم أو كلمة المرور غير صحيحة'), findsNothing);
   });
 
-  testWidgets('donor form: saving without name/group shows required message',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+  testWidgets('donor form: saving without name/group shows required message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
-    // No name, no group -> Save shows the validation snackbar.
+    // No name, no group -> inline errors under both fields.
     await tester.ensureVisible(find.text('حفظ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
     await tester.pump();
-    expect(find.text('الاسم وزمرة الدم مطلوبان'), findsOneWidget);
+    expect(find.text('هذا الحقل مطلوب'), findsNWidgets(2));
+  });
+
+  testWidgets('donor form: bad phone, email and date block saving', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'ياسين');
+    await tester.enterText(fields.at(2), '31/02/2020'); // birth date
+    await tester.enterText(fields.at(5), '123'); // phone too short
+    await tester.enterText(fields.at(6), 'not-an-email');
+    await tester.tap(find.text('O+'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+
+    expect(find.text(tr('ar', 'invalidPhone')), findsOneWidget);
+    expect(find.text(tr('ar', 'invalidEmail')), findsOneWidget);
+    expect(find.text(tr('ar', 'invalidDate')), findsOneWidget);
+    expect(await db.getAllDonors(), isEmpty);
   });
 
   testWidgets('donor form: full save flow persists a donor', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DonorFormScreen(
-          state: state,
-          donorId: null,
-          onClose: () {},
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'ياسين عماري');
@@ -99,14 +135,14 @@ void main() {
 }
 
 AppSetting _settingRow({required AppDatabase db}) => AppSetting(
-      id: 1,
-      username: 'admin',
-      passwordHash: '',
-      isDefaultPassword: true,
-      language: 'ar',
-      notificationsEnabled: true,
-      notifiedJson: '{}',
-    );
+  id: 1,
+  username: 'admin',
+  passwordHash: '',
+  isDefaultPassword: true,
+  language: 'ar',
+  notificationsEnabled: true,
+  notifiedJson: '{}',
+);
 
 class _FakePaths implements StoragePaths {
   @override

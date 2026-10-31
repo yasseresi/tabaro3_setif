@@ -26,6 +26,7 @@ class Donors extends Table {
   TextColumn get phenotype => text().withDefault(const Constant(''))();
   TextColumn get birthDate =>
       text().withDefault(const Constant(''))(); // YYYY-MM-DD
+  TextColumn get birthPlace => text().withDefault(const Constant(''))();
   TextColumn get lastDonation => text().withDefault(const Constant(''))();
   TextColumn get lastTest => text().withDefault(const Constant(''))();
   TextColumn get notes => text().withDefault(const Constant(''))();
@@ -90,11 +91,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) await m.addColumn(donors, donors.birthPlace);
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
       await customStatement('PRAGMA journal_mode = WAL');
@@ -275,6 +279,29 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Corrects the donor's latest [eventType] date from [oldDate] to
+  /// [newDate] (empty = remove it) and refreshes the summary, atomically.
+  Future<void> replaceLastEvent({
+    required String donorId,
+    required String eventType,
+    required String oldDate,
+    required String newDate,
+  }) async {
+    await transaction(() async {
+      if (oldDate.isNotEmpty) {
+        await (delete(donationEvents)..where(
+              (e) =>
+                  e.donorId.equals(donorId) &
+                  e.eventType.equals(eventType) &
+                  e.eventDate.equals(oldDate),
+            ))
+            .go();
+      }
+      if (newDate.isNotEmpty) await _addEventIfNew(donorId, eventType, newDate);
+      await _recomputeDonor(donorId);
+    });
+  }
+
   /// Removes one event and recomputes the donor's summary fields.
   Future<void> deleteEvent(String eventId) async {
     await transaction(() async {
@@ -327,9 +354,15 @@ class AppDatabase extends _$AppDatabase {
           continue;
         }
         final phone = normalizePhone(row.phone);
-        final match = phone.length >= 4
-            ? (byPhone[phone] ?? byNameGroup['$name|$group'])
-            : byNameGroup['$name|$group'];
+        // Name+group is a fallback only when the row has no phone, or the
+        // candidate has none to contradict it — else two people would merge.
+        final byName = byNameGroup['$name|$group'];
+        final match = phone.length < 4
+            ? byName
+            : (byPhone[phone] ??
+                  (byName != null && normalizePhone(byName.phone).length < 4
+                      ? byName
+                      : null));
         if (match == null) {
           final donor = Donor(
             id: _uuid(),
@@ -345,6 +378,7 @@ class AppDatabase extends _$AppDatabase {
             workEmail: row.workEmail,
             phenotype: row.phenotype,
             birthDate: row.birthDate,
+            birthPlace: row.birthPlace,
             lastDonation: row.lastDonation,
             lastTest: row.lastTest,
             notes: row.notes,
@@ -392,6 +426,9 @@ class AppDatabase extends _$AppDatabase {
                   : const Value.absent(),
               birthDate: match.birthDate.isEmpty
                   ? Value(row.birthDate)
+                  : const Value.absent(),
+              birthPlace: match.birthPlace.isEmpty
+                  ? Value(row.birthPlace)
                   : const Value.absent(),
               notes: match.notes.isEmpty
                   ? Value(row.notes)
@@ -471,7 +508,7 @@ class AppDatabase extends _$AppDatabase {
 class ImportedDonor {
   final String name, gender, bloodGroup, phone, maidenName, address, email;
   final String workAddress, workPhone, workEmail, phenotype;
-  final String birthDate, lastDonation, lastTest, notes;
+  final String birthDate, birthPlace, lastDonation, lastTest, notes;
   ImportedDonor({
     required this.name,
     required this.gender,
@@ -485,6 +522,7 @@ class ImportedDonor {
     required this.workEmail,
     required this.phenotype,
     required this.birthDate,
+    this.birthPlace = '',
     required this.lastDonation,
     required this.lastTest,
     required this.notes,

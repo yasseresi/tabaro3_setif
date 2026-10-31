@@ -15,12 +15,14 @@ void main() {
     await db.close();
   });
 
-  DonorsCompanion donor(String name,
-      {String gender = 'M',
-      String group = 'O+',
-      String phone = '',
-      String lastDonation = '',
-      String lastTest = ''}) {
+  DonorsCompanion donor(
+    String name, {
+    String gender = 'M',
+    String group = 'O+',
+    String phone = '',
+    String lastDonation = '',
+    String lastTest = '',
+  }) {
     return DonorsCompanion.insert(
       id: 'id_$name',
       name: name,
@@ -71,7 +73,10 @@ void main() {
     test('delete donor cascades events', () async {
       await db.insertDonor(donor('Ahmed'));
       await db.recordEvent(
-          donorId: 'id_Ahmed', eventType: 'donation', eventDate: '2026-05-01');
+        donorId: 'id_Ahmed',
+        eventType: 'donation',
+        eventDate: '2026-05-01',
+      );
       await db.deleteDonor('id_Ahmed');
       expect(await db.getAllDonors(), isEmpty);
       expect(await db.getEvents('id_Ahmed'), isEmpty);
@@ -79,28 +84,37 @@ void main() {
   });
 
   group('recordEvent transactional invariant', () {
-    test('recording donation updates lastDonation + count + inserts event',
-        () async {
-      await db.insertDonor(donor('Sara', gender: 'F'));
-      await db.recordEvent(
-          donorId: 'id_Sara', eventType: 'donation', eventDate: '2026-06-15');
-      final d = await db.getDonor('id_Sara');
-      expect(d.lastDonation, '2026-06-15');
-      expect(d.donationCount, 1);
-      final events = await db.getEvents('id_Sara');
-      expect(events.length, 1);
-      expect(events.first.eventType, 'donation');
-    });
+    test(
+      'recording donation updates lastDonation + count + inserts event',
+      () async {
+        await db.insertDonor(donor('Sara', gender: 'F'));
+        await db.recordEvent(
+          donorId: 'id_Sara',
+          eventType: 'donation',
+          eventDate: '2026-06-15',
+        );
+        final d = await db.getDonor('id_Sara');
+        expect(d.lastDonation, '2026-06-15');
+        expect(d.donationCount, 1);
+        final events = await db.getEvents('id_Sara');
+        expect(events.length, 1);
+        expect(events.first.eventType, 'donation');
+      },
+    );
 
     test('re-recording same date does not duplicate', () async {
       await db.insertDonor(donor('Sara', gender: 'F'));
       await db.recordEvent(
-          donorId: 'id_Sara', eventType: 'donation', eventDate: '2026-06-15');
+        donorId: 'id_Sara',
+        eventType: 'donation',
+        eventDate: '2026-06-15',
+      );
       await db.recordEvent(
-          donorId: 'id_Sara',
-          eventType: 'donation',
-          eventDate: '2026-06-15',
-          ta: '12/8');
+        donorId: 'id_Sara',
+        eventType: 'donation',
+        eventDate: '2026-06-15',
+        ta: '12/8',
+      );
       final events = await db.getEvents('id_Sara');
       expect(events.length, 1);
       expect(events.first.ta, '12/8');
@@ -109,19 +123,26 @@ void main() {
     test('donation then test keeps both latest dates', () async {
       await db.insertDonor(donor('Karim'));
       await db.recordEvent(
-          donorId: 'id_Karim', eventType: 'donation', eventDate: '2026-05-01');
+        donorId: 'id_Karim',
+        eventType: 'donation',
+        eventDate: '2026-05-01',
+      );
       await db.recordEvent(
-          donorId: 'id_Karim', eventType: 'test', eventDate: '2026-08-01');
+        donorId: 'id_Karim',
+        eventType: 'test',
+        eventDate: '2026-08-01',
+      );
       final d = await db.getDonor('id_Karim');
       expect(d.lastDonation, '2026-05-01');
       expect(d.lastTest, '2026-08-01');
       // reference = test -> wait
       expect(
         eligibilityStatus(
-            gender: 'M',
-            lastDonation: d.lastDonation,
-            lastTest: d.lastTest,
-            now: DateTime(2026, 10, 20)),
+          gender: 'M',
+          lastDonation: d.lastDonation,
+          lastTest: d.lastTest,
+          now: DateTime(2026, 10, 20),
+        ),
         'wait',
       );
     });
@@ -129,9 +150,15 @@ void main() {
     test('deleting an event recomputes donor summary', () async {
       await db.insertDonor(donor('Karim'));
       await db.recordEvent(
-          donorId: 'id_Karim', eventType: 'donation', eventDate: '2026-05-01');
+        donorId: 'id_Karim',
+        eventType: 'donation',
+        eventDate: '2026-05-01',
+      );
       await db.recordEvent(
-          donorId: 'id_Karim', eventType: 'donation', eventDate: '2026-08-01');
+        donorId: 'id_Karim',
+        eventType: 'donation',
+        eventDate: '2026-08-01',
+      );
       expect((await db.getDonor('id_Karim')).donationCount, 2);
       final events = await db.getEvents('id_Karim');
       final first = events.firstWhere((e) => e.eventDate == '2026-05-01');
@@ -143,20 +170,21 @@ void main() {
   });
 
   group('smart merge', () {
-    test('new rows added, matching rows merged, invalid rows skipped',
-        () async {
-      await db.insertDonor(donor('Ahmed', group: 'O+', phone: '0551112233'));
-      // History is created through recordEvent (transactional invariant),
-      // exactly like the app does when registering a donation.
-      await db.recordEvent(
-        donorId: 'id_Ahmed',
-        eventType: 'donation',
-        eventDate: '2026-01-01',
-      );
+    test(
+      'new rows added, matching rows merged, invalid rows skipped',
+      () async {
+        await db.insertDonor(donor('Ahmed', group: 'O+', phone: '0551112233'));
+        // History is created through recordEvent (transactional invariant),
+        // exactly like the app does when registering a donation.
+        await db.recordEvent(
+          donorId: 'id_Ahmed',
+          eventType: 'donation',
+          eventDate: '2026-01-01',
+        );
 
-      final rows = [
-        // exact new donor
-        ImportedDonor(
+        final rows = [
+          // exact new donor
+          ImportedDonor(
             name: 'Nadia',
             gender: 'F',
             bloodGroup: 'A+',
@@ -171,9 +199,10 @@ void main() {
             birthDate: '',
             lastDonation: '2026-02-01',
             lastTest: '',
-            notes: ''),
-        // same phone -> merge, keep max date, fill address
-        ImportedDonor(
+            notes: '',
+          ),
+          // same phone -> merge, keep max date, fill address
+          ImportedDonor(
             name: 'Ahmed',
             gender: 'M',
             bloodGroup: 'O+',
@@ -188,9 +217,10 @@ void main() {
             birthDate: '',
             lastDonation: '2026-05-01',
             lastTest: '',
-            notes: ''),
-        // no phone, name+group match -> merge
-        ImportedDonor(
+            notes: '',
+          ),
+          // no phone, name+group match -> merge
+          ImportedDonor(
             name: 'ahmed',
             gender: 'M',
             bloodGroup: 'O+',
@@ -205,9 +235,10 @@ void main() {
             birthDate: '',
             lastDonation: '',
             lastTest: '2026-03-01',
-            notes: ''),
-        // invalid group -> skipped
-        ImportedDonor(
+            notes: '',
+          ),
+          // invalid group -> skipped
+          ImportedDonor(
             name: 'Bad Row',
             gender: 'M',
             bloodGroup: 'ZZ',
@@ -222,50 +253,53 @@ void main() {
             birthDate: '',
             lastDonation: '',
             lastTest: '',
-            notes: ''),
-      ];
+            notes: '',
+          ),
+        ];
 
-      final (added, updated, skipped) = await db.smartMergeDonors(rows);
-      expect(added, 1);
-      expect(updated, 2);
-      expect(skipped, 1);
+        final (added, updated, skipped) = await db.smartMergeDonors(rows);
+        expect(added, 1);
+        expect(updated, 2);
+        expect(skipped, 1);
 
-      final all = await db.getAllDonors();
-      expect(all.length, 2);
-      final ahmed = all.firstWhere((d) => d.name == 'Ahmed');
-      expect(ahmed.lastDonation, '2026-05-01'); // max kept
-      expect(ahmed.lastTest, '2026-03-01'); // filled from third row
-      expect(ahmed.address, 'El Eulma');
-      expect(ahmed.phone, '0551112233');
-      // merged events appended, not duplicated
-      final ahmedEvents = await db.getEvents(ahmed.id);
-      final donDates = ahmedEvents
-          .where((e) => e.eventType == 'donation')
-          .map((e) => e.eventDate)
-          .toList();
-      expect(donDates, containsAll(['2026-01-01', '2026-05-01']));
-      expect(donDates.length, 2);
-      expect(ahmed.donationCount, 2);
-    });
+        final all = await db.getAllDonors();
+        expect(all.length, 2);
+        final ahmed = all.firstWhere((d) => d.name == 'Ahmed');
+        expect(ahmed.lastDonation, '2026-05-01'); // max kept
+        expect(ahmed.lastTest, '2026-03-01'); // filled from third row
+        expect(ahmed.address, 'El Eulma');
+        expect(ahmed.phone, '0551112233');
+        // merged events appended, not duplicated
+        final ahmedEvents = await db.getEvents(ahmed.id);
+        final donDates = ahmedEvents
+            .where((e) => e.eventType == 'donation')
+            .map((e) => e.eventDate)
+            .toList();
+        expect(donDates, containsAll(['2026-01-01', '2026-05-01']));
+        expect(donDates.length, 2);
+        expect(ahmed.donationCount, 2);
+      },
+    );
 
     test('re-importing the same file never duplicates', () async {
       final rows = [
         ImportedDonor(
-            name: 'Nadia',
-            gender: 'F',
-            bloodGroup: 'A+',
-            phone: '0559998877',
-            maidenName: '',
-            address: '',
-            email: '',
-            workAddress: '',
-            workPhone: '',
-            workEmail: '',
-            phenotype: '',
-            birthDate: '',
-            lastDonation: '2026-02-01',
-            lastTest: '',
-            notes: ''),
+          name: 'Nadia',
+          gender: 'F',
+          bloodGroup: 'A+',
+          phone: '0559998877',
+          maidenName: '',
+          address: '',
+          email: '',
+          workAddress: '',
+          workPhone: '',
+          workEmail: '',
+          phenotype: '',
+          birthDate: '',
+          lastDonation: '2026-02-01',
+          lastTest: '',
+          notes: '',
+        ),
       ];
       await db.smartMergeDonors(rows);
       await db.smartMergeDonors(rows);
@@ -274,4 +308,100 @@ void main() {
       expect(all.first.donationCount, 1);
     });
   });
+
+  group('replaceLastEvent', () {
+    test(
+      'correcting to an earlier date or clearing updates eligibility',
+      () async {
+        await db.insertDonor(donor('Sami'));
+        await db.recordEvent(
+          donorId: 'id_Sami',
+          eventType: 'donation',
+          eventDate: '2026-03-01',
+        );
+        await db.replaceLastEvent(
+          donorId: 'id_Sami',
+          eventType: 'donation',
+          oldDate: '2026-03-01',
+          newDate: '2026-01-15',
+        );
+        var d = await db.getDonor('id_Sami');
+        expect(d.lastDonation, '2026-01-15');
+        expect(d.donationCount, 1);
+        await db.replaceLastEvent(
+          donorId: 'id_Sami',
+          eventType: 'donation',
+          oldDate: '2026-01-15',
+          newDate: '',
+        );
+        d = await db.getDonor('id_Sami');
+        expect(d.lastDonation, '');
+        expect(d.donationCount, 0);
+      },
+    );
+  });
+
+  test('import never merges same name+group with a different phone', () async {
+    ImportedDonor row(String phone) => ImportedDonor(
+      name: 'Karim',
+      gender: 'M',
+      bloodGroup: 'B+',
+      phone: phone,
+      maidenName: '',
+      address: '',
+      email: '',
+      workAddress: '',
+      workPhone: '',
+      workEmail: '',
+      phenotype: '',
+      birthDate: '',
+      lastDonation: '',
+      lastTest: '',
+      notes: '',
+    );
+    await db.smartMergeDonors([row('0551112233')]);
+    await db.smartMergeDonors([row('0667778899')]);
+    expect((await db.getAllDonors()).length, 2);
+  });
+
+  test('upgrade from schema v1 keeps donors and adds birth_place', () async {
+    final old = AppDatabase.forTesting(
+      NativeDatabase.memory(setup: (raw) => raw.execute(_v1Schema)),
+    );
+    final all = await old.getAllDonors();
+    expect(all.single.name, 'Old Donor');
+    expect(all.single.birthPlace, '');
+    await old.close();
+  });
 }
+
+// Schema v1 (before donors.birth_place existed), used by the upgrade test.
+const _v1Schema = '''
+CREATE TABLE donors (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL,
+  gender TEXT NOT NULL, blood_group TEXT NOT NULL,
+  phone TEXT NOT NULL DEFAULT '', maiden_name TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '',
+  work_address TEXT NOT NULL DEFAULT '', work_phone TEXT NOT NULL DEFAULT '',
+  work_email TEXT NOT NULL DEFAULT '', phenotype TEXT NOT NULL DEFAULT '',
+  birth_date TEXT NOT NULL DEFAULT '', last_donation TEXT NOT NULL DEFAULT '',
+  last_test TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+  photo_filename TEXT NOT NULL DEFAULT '',
+  donation_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE donation_events (id TEXT NOT NULL PRIMARY KEY,
+  donor_id TEXT NOT NULL, event_type TEXT NOT NULL,
+  event_date TEXT NOT NULL, ta TEXT NOT NULL DEFAULT '',
+  weight TEXT NOT NULL DEFAULT '', donation_type TEXT NOT NULL DEFAULT '',
+  bilan TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL);
+CREATE TABLE app_settings (id INTEGER NOT NULL PRIMARY KEY,
+  username TEXT NOT NULL DEFAULT 'admin',
+  password_hash TEXT NOT NULL DEFAULT '',
+  is_default_password INTEGER NOT NULL DEFAULT 1,
+  language TEXT NOT NULL DEFAULT 'ar',
+  notifications_enabled INTEGER NOT NULL DEFAULT 1,
+  notified_json TEXT NOT NULL DEFAULT '{}');
+INSERT INTO donors (id, name, gender, blood_group, phone, created_at, updated_at)
+  VALUES ('d1', 'Old Donor', 'M', 'A+', '0550000000', 'x', 'x');
+PRAGMA user_version = 1;
+''';

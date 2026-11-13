@@ -153,7 +153,6 @@ class CswFicheService {
       children: [
         field('Identifiant donneur', d.id),
         field('Nom, Prénom (s)', d.name),
-        field('Nom de jeune fille', d.maidenName),
         field(
           'Né (e) le',
           '${displayDate(d.birthDate)}${d.birthPlace.isEmpty ? '' : ' à ${d.birthPlace}'}',

@@ -86,9 +86,9 @@ void main() {
 
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'ياسين');
-    await tester.enterText(fields.at(2), '31/02/2020'); // birth date
-    await tester.enterText(fields.at(5), '123'); // phone too short
-    await tester.enterText(fields.at(6), 'not-an-email');
+    await tester.enterText(fields.at(1), '31/02/2020'); // birth date
+    await tester.enterText(fields.at(4), '123'); // phone too short
+    await tester.enterText(fields.at(5), 'not-an-email');
     await tester.tap(find.text('O+'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('حفظ'));
@@ -114,7 +114,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final birthField = find.byType(TextField).at(2);
+    final birthField = find.byType(TextField).at(1);
     expect(tester.widget<TextField>(birthField).controller!.text, isEmpty);
     await tester.tap(find.byIcon(LucideIcons.calendar).first);
     await tester.pumpAndSettle();
@@ -141,12 +141,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextField);
-    await tester.enterText(fields.at(2), '15032020');
+    await tester.enterText(fields.at(1), '15032020');
     expect(
-      tester.widget<TextField>(fields.at(2)).controller!.text,
+      tester.widget<TextField>(fields.at(1)).controller!.text,
       '15/03/2020',
     );
-    await tester.enterText(fields.at(5), '055123456'); // 9 digits
+    await tester.enterText(fields.at(4), '055123456'); // 9 digits
     await tester.enterText(fields.at(0), 'ياسين');
     await tester.tap(find.text('O+'));
     await tester.pumpAndSettle();
@@ -178,7 +178,7 @@ void main() {
     await tester.tap(find.text('O+'));
     await tester.pumpAndSettle();
     // Typing in a far field scrolls the form, so fill it after picking O+.
-    await tester.enterText(find.byType(TextField).at(5), '0551234567');
+    await tester.enterText(find.byType(TextField).at(4), '0551234567');
     await tester.ensureVisible(find.text('حفظ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
@@ -195,6 +195,58 @@ void main() {
     // After saving, the history card subscribes to a Drift stream; closing
     // the DB here flushes Drift's internal cache timer before the tree is
     // disposed (per Drift's guidance for widget tests).
+    await db.close();
+  });
+
+  testWidgets('donor form: no maiden name field, legacy value kept on save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final now = DateTime.now().toIso8601String();
+    await db.insertDonorData(
+      Donor(
+        id: 'd1',
+        name: 'أمينة حداد',
+        gender: 'F',
+        bloodGroup: 'A+',
+        phone: '0551234567',
+        maidenName: 'legacy',
+        address: '',
+        email: '',
+        workAddress: '',
+        workPhone: '',
+        workEmail: '',
+        phenotype: '',
+        birthDate: '',
+        birthPlace: '',
+        lastDonation: '',
+        lastTest: '',
+        notes: '',
+        photoFilename: '',
+        donationCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: 'd1', onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('legacy'), findsNothing);
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect((await db.getDonor('d1')).maidenName, 'legacy');
     await db.close();
   });
 }

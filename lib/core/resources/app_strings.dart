@@ -45,7 +45,6 @@ const Map<String, ({String ar, String fr})> _dict = {
   'logout': (ar: 'خروج', fr: 'Déconnexion'),
   'donorInfo': (ar: 'معلومات المتبرع', fr: 'Informations du donneur'),
   'name': (ar: 'الاسم و اللقب', fr: 'Nom et prénom'),
-  'maidenName': (ar: 'اسم العائلة قبل الزواج', fr: 'Nom de jeune fille'),
   'gender': (ar: 'الجنس', fr: 'Sexe'),
   'male': (ar: 'ذكر (3 أشهر)', fr: 'Homme (3 mois)'),
   'female': (ar: 'أنثى (4 أشهر)', fr: 'Femme (4 mois)'),

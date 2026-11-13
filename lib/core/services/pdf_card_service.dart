@@ -128,7 +128,6 @@ class PdfCardService {
       columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2)},
       children: [
         row('الاسم و اللقب', 'Nom et prénom', d.name),
-        row('اسم الزواج', 'Nom de jeune fille', d.maidenName),
         row(
           'الجنس',
           'Sexe',

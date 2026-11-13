@@ -31,7 +31,6 @@ class DonorFormScreen extends StatefulWidget {
 
 class _DonorFormScreenState extends State<DonorFormScreen> {
   final _name = TextEditingController();
-  final _maiden = TextEditingController();
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _email = TextEditingController();
@@ -68,7 +67,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
       final d = await widget.state.db.getDonor(id);
       _donorId = d.id;
       _name.text = d.name;
-      _maiden.text = d.maidenName;
       _phone.text = d.phone;
       _address.text = d.address;
       _email.text = d.email;
@@ -106,10 +104,11 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
         gender: _gender,
         bloodGroup: _group!,
         phone: _phone.text.trim(),
-        maidenName: _maiden.text.trim(),
         address: _address.text.trim(),
         email: _email.text.trim(),
-        // Work contacts are no longer edited; keep any legacy values.
+        // Maiden name and work contacts are no longer edited; keep any
+        // legacy values.
+        maidenName: existing?.maidenName ?? '',
         workAddress: existing?.workAddress ?? '',
         workPhone: existing?.workPhone ?? '',
         workEmail: existing?.workEmail ?? '',
@@ -184,7 +183,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
     _formKey.currentState?.reset();
     for (final c in [
       _name,
-      _maiden,
       _phone,
       _address,
       _email,
@@ -275,8 +273,6 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
                   ? t('requiredField')
                   : null,
             ),
-            _label(t('maidenName')),
-            TextFormField(controller: _maiden),
             const SizedBox(height: 10),
             _label(t('gender')),
             Row(

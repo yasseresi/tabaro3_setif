@@ -32,6 +32,16 @@ Bilingual: **Arabic (RTL, default)** & **French (LTR)** with instant direction s
 
 ---
 
+## 📸 Screenshots
+
+> Screenshots coming soon. Drop images in `docs/screenshots/` and uncomment the table below.
+
+<!--
+| Screen 1 | Screen 2 | Screen 3 |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/01.png" width="240"/> | <img src="docs/screenshots/02.png" width="240"/> | <img src="docs/screenshots/03.png" width="240"/> |
+-->
+
 ## Data storage (never in `Program Files`)
 
 All mutable data lives in the OS Application Support directory:
@@ -67,3 +77,9 @@ Docs: [`docs/`](docs/) — spec (`UI_AND_DOMAIN_SPEC.md`), stack, architecture,
 best practices, guardrails, release/versioning.
 
 License: see [LICENSE](LICENSE).
+
+---
+
+## 👤 Author
+
+**Yasser Korzane** — Flutter & Go developer · [GitHub](https://github.com/yasseresi) · [LinkedIn](https://www.linkedin.com/in/korzane-yasser)

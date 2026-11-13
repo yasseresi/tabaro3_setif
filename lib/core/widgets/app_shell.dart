@@ -9,6 +9,7 @@ import '../../features/import_export/import_export_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../app_state.dart';
 import '../resources/app_colors.dart';
+import '../resources/app_env.dart';
 import '../resources/app_strings.dart';
 import 'brand_emblems.dart';
 
@@ -90,11 +91,15 @@ class _AppShellState extends State<AppShell> {
             ),
             child: Row(
               children: [
-                BloodDropLogo(size: 34, color: Colors.white),
+                BloodDropLogo(
+                  size: 34,
+                  color: Colors.white,
+                  heartColor: AppColors.primaryDark,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    t('appName'),
+                    AppEnv.appTitle(t('appName')),
                     style: const TextStyle(
                       fontFamily: 'Cairo',
                       color: Colors.white,
@@ -141,7 +146,11 @@ class _AppShellState extends State<AppShell> {
             padding: const EdgeInsetsDirectional.all(16),
             child: Column(
               children: [
-                BloodDropLogo(size: 56, color: Colors.white),
+                BloodDropLogo(
+                  size: 56,
+                  color: Colors.white,
+                  heartColor: AppColors.primaryDark,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   t('together'),

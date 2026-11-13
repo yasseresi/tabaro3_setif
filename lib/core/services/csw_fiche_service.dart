@@ -1,6 +1,5 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../../../data/app_database.dart';
 import '../domain/eligibility.dart';
@@ -34,23 +33,7 @@ class CswFicheService {
       theme: pw.ThemeData.withFont(base: base, bold: bold),
     );
     pdf.addPage(_page(pdf, d, events, blank, base, bold));
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
-  }
-
-  /// Multi-donor print job: one fiche page per donor.
-  static Future<void> printAllFiches(
-    List<Donor> donors,
-    Future<List<DonationEvent>> Function(String) eventsOf,
-  ) async {
-    final (base, bold) = await PdfCommon.loadFonts();
-    final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(base: base, bold: bold),
-    );
-    for (final d in donors) {
-      final events = await eventsOf(d.id);
-      pdf.addPage(_page(pdf, d, events, false, base, bold));
-    }
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
+    await PdfCommon.printPdf(pdf, name: 'csw_fiche');
   }
 
   static pw.Page _page(
@@ -170,12 +153,12 @@ class CswFicheService {
       children: [
         field('Identifiant donneur', d.id),
         field('Nom, Prénom (s)', d.name),
-        field('Nom de jeune fille', d.maidenName),
-        field('Né (e) le', displayDate(d.birthDate)),
-        field('Adresse domicile', d.address),
+        field(
+          'Né (e) le',
+          '${displayDate(d.birthDate)}${d.birthPlace.isEmpty ? '' : ' à ${d.birthPlace}'}',
+        ),
+        field('Adresse', d.address),
         twoFields('Tél', d.phone, 'E-mail', d.email),
-        field('Adresse professionnelle', d.workAddress),
-        twoFields('Tél', d.workPhone, 'E-mail', d.workEmail),
       ],
     );
   }

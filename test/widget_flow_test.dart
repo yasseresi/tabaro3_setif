@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:tabaro3_setif/core/app_state.dart';
+import 'package:tabaro3_setif/core/resources/app_strings.dart';
 import 'package:tabaro3_setif/core/services/storage_paths.dart';
 import 'package:tabaro3_setif/data/app_database.dart';
 import 'package:tabaro3_setif/features/auth/login_screen.dart';
@@ -16,20 +18,24 @@ void main() {
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     state = AppState(
-        db: db,
-        paths: _FakePaths(),
-        settings: _settingRow(db: db));
+      db: db,
+      paths: _FakePaths(),
+      settings: _settingRow(db: db),
+    );
   });
 
   tearDown(() async {
     await db.close();
   });
 
-  testWidgets('login screen: bad credentials show error, good ones succeed',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: LoginScreen(state: state, onSuccess: () {}),
-    ));
+  testWidgets('login screen: bad credentials show error, good ones succeed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginScreen(state: state, onSuccess: () {}),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'admin');
@@ -46,39 +52,133 @@ void main() {
     expect(find.text('اسم المستخدم أو كلمة المرور غير صحيحة'), findsNothing);
   });
 
-  testWidgets('donor form: saving without name/group shows required message',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+  testWidgets('donor form: saving without name/group shows required message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
-    // No name, no group -> Save shows the validation snackbar.
+    // No name, no group -> inline errors under both fields.
     await tester.ensureVisible(find.text('حفظ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
     await tester.pump();
-    expect(find.text('الاسم وزمرة الدم مطلوبان'), findsOneWidget);
+    expect(find.text('هذا الحقل مطلوب'), findsNWidgets(2));
+  });
+
+  testWidgets('donor form: bad phone, email and date block saving', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'ياسين');
+    await tester.enterText(fields.at(1), '31/02/2020'); // birth date
+    await tester.enterText(fields.at(4), '123'); // phone too short
+    await tester.enterText(fields.at(5), 'not-an-email');
+    await tester.tap(find.text('O+'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+
+    expect(find.text(tr('ar', 'invalidPhone')), findsOneWidget);
+    expect(find.text(tr('ar', 'invalidEmail')), findsOneWidget);
+    expect(find.text(tr('ar', 'invalidDate')), findsOneWidget);
+    expect(await db.getAllDonors(), isEmpty);
+  });
+
+  testWidgets('donor form: calendar button fills the date field', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final birthField = find.byType(TextField).at(1);
+    expect(tester.widget<TextField>(birthField).controller!.text, isEmpty);
+    await tester.tap(find.byIcon(LucideIcons.calendar).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(birthField).controller!.text, isNotEmpty);
+  });
+
+  testWidgets('donor form: dates auto-format and phone needs 10 digits', (
+    tester,
+  ) async {
+    // Desktop-sized window: the default 800x600 test surface hides Save.
+    tester.view.physicalSize = const Size(1280, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '15032020');
+    expect(
+      tester.widget<TextField>(fields.at(1)).controller!.text,
+      '15/03/2020',
+    );
+    await tester.enterText(fields.at(4), '055123456'); // 9 digits
+    await tester.enterText(fields.at(0), 'ياسين');
+    await tester.tap(find.text('O+'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    expect(find.text(tr('ar', 'invalidPhone')), findsOneWidget);
+
+    await db.close();
   });
 
   testWidgets('donor form: full save flow persists a donor', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: DonorFormScreen(
-          state: state,
-          donorId: null,
-          onClose: () {},
+    // Desktop-sized window: the default 800x600 test surface hides Save.
+    tester.view.physicalSize = const Size(1280, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: null, onClose: () {}),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'ياسين عماري');
     // Pick blood group O+
     await tester.tap(find.text('O+'));
     await tester.pumpAndSettle();
+    // Typing in a far field scrolls the form, so fill it after picking O+.
+    await tester.enterText(find.byType(TextField).at(4), '0551234567');
     await tester.ensureVisible(find.text('حفظ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
@@ -90,23 +190,76 @@ void main() {
     expect(donors.first.name, 'ياسين عماري');
     expect(donors.first.bloodGroup, 'O+');
     expect(donors.first.gender, 'M');
+    expect(donors.first.phone, '0551234567');
 
     // After saving, the history card subscribes to a Drift stream; closing
     // the DB here flushes Drift's internal cache timer before the tree is
     // disposed (per Drift's guidance for widget tests).
     await db.close();
   });
+
+  testWidgets('donor form: no maiden name field, legacy value kept on save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final now = DateTime.now().toIso8601String();
+    await db.insertDonorData(
+      Donor(
+        id: 'd1',
+        name: 'أمينة حداد',
+        gender: 'F',
+        bloodGroup: 'A+',
+        phone: '0551234567',
+        maidenName: 'legacy',
+        address: '',
+        email: '',
+        workAddress: '',
+        workPhone: '',
+        workEmail: '',
+        phenotype: '',
+        birthDate: '',
+        birthPlace: '',
+        lastDonation: '',
+        lastTest: '',
+        notes: '',
+        photoFilename: '',
+        donationCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DonorFormScreen(state: state, donorId: 'd1', onClose: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('legacy'), findsNothing);
+    await tester.ensureVisible(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect((await db.getDonor('d1')).maidenName, 'legacy');
+    await db.close();
+  });
 }
 
 AppSetting _settingRow({required AppDatabase db}) => AppSetting(
-      id: 1,
-      username: 'admin',
-      passwordHash: '',
-      isDefaultPassword: true,
-      language: 'ar',
-      notificationsEnabled: true,
-      notifiedJson: '{}',
-    );
+  id: 1,
+  username: 'admin',
+  passwordHash: '',
+  isDefaultPassword: true,
+  language: 'ar',
+  notificationsEnabled: true,
+  notifiedJson: '{}',
+);
 
 class _FakePaths implements StoragePaths {
   @override

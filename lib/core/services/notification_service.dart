@@ -17,7 +17,7 @@ class NotificationService {
           windows: WindowsInitializationSettings(
             appName: 'CWTS_Setif',
             appUserModelId: 'com.cwtssetif.tabaro3Setif',
-            guid: '9B4F2C81-6E1A-4D3B-9C12-BETA00CWTS19',
+            guid: 'BF95BF75-EE3A-4140-98E7-77C2680C95F8',
           ),
           macOS: DarwinInitializationSettings(),
         ),

@@ -1,7 +1,7 @@
 name: tabaro3_setif
 description: "Gestion des donneurs de sang - CWTS Setif (Centre de Wilaya de Transfusion Sanguine)."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.12.2
@@ -29,6 +29,8 @@ dependencies:
   crypto: ^3.0.6
   uuid: ^4.5.1
   intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
   lucide_icons_flutter: ^4.0.1
   window_manager: ^0.5.1
   # Desktop notifications (Windows + macOS, SPM-supported)

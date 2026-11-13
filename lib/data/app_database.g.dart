@@ -150,6 +150,18 @@ class $DonorsTable extends Donors with TableInfo<$DonorsTable, Donor> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _birthPlaceMeta = const VerificationMeta(
+    'birthPlace',
+  );
+  @override
+  late final GeneratedColumn<String> birthPlace = GeneratedColumn<String>(
+    'birth_place',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _lastDonationMeta = const VerificationMeta(
     'lastDonation',
   );
@@ -245,6 +257,7 @@ class $DonorsTable extends Donors with TableInfo<$DonorsTable, Donor> {
     workEmail,
     phenotype,
     birthDate,
+    birthPlace,
     lastDonation,
     lastTest,
     notes,
@@ -349,6 +362,12 @@ class $DonorsTable extends Donors with TableInfo<$DonorsTable, Donor> {
       context.handle(
         _birthDateMeta,
         birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
+      );
+    }
+    if (data.containsKey('birth_place')) {
+      context.handle(
+        _birthPlaceMeta,
+        birthPlace.isAcceptableOrUnknown(data['birth_place']!, _birthPlaceMeta),
       );
     }
     if (data.containsKey('last_donation')) {
@@ -467,6 +486,10 @@ class $DonorsTable extends Donors with TableInfo<$DonorsTable, Donor> {
         DriftSqlType.string,
         data['${effectivePrefix}birth_date'],
       )!,
+      birthPlace: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}birth_place'],
+      )!,
       lastDonation: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last_donation'],
@@ -518,6 +541,7 @@ class Donor extends DataClass implements Insertable<Donor> {
   final String workEmail;
   final String phenotype;
   final String birthDate;
+  final String birthPlace;
   final String lastDonation;
   final String lastTest;
   final String notes;
@@ -539,6 +563,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     required this.workEmail,
     required this.phenotype,
     required this.birthDate,
+    required this.birthPlace,
     required this.lastDonation,
     required this.lastTest,
     required this.notes,
@@ -563,6 +588,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     map['work_email'] = Variable<String>(workEmail);
     map['phenotype'] = Variable<String>(phenotype);
     map['birth_date'] = Variable<String>(birthDate);
+    map['birth_place'] = Variable<String>(birthPlace);
     map['last_donation'] = Variable<String>(lastDonation);
     map['last_test'] = Variable<String>(lastTest);
     map['notes'] = Variable<String>(notes);
@@ -588,6 +614,7 @@ class Donor extends DataClass implements Insertable<Donor> {
       workEmail: Value(workEmail),
       phenotype: Value(phenotype),
       birthDate: Value(birthDate),
+      birthPlace: Value(birthPlace),
       lastDonation: Value(lastDonation),
       lastTest: Value(lastTest),
       notes: Value(notes),
@@ -617,6 +644,7 @@ class Donor extends DataClass implements Insertable<Donor> {
       workEmail: serializer.fromJson<String>(json['workEmail']),
       phenotype: serializer.fromJson<String>(json['phenotype']),
       birthDate: serializer.fromJson<String>(json['birthDate']),
+      birthPlace: serializer.fromJson<String>(json['birthPlace']),
       lastDonation: serializer.fromJson<String>(json['lastDonation']),
       lastTest: serializer.fromJson<String>(json['lastTest']),
       notes: serializer.fromJson<String>(json['notes']),
@@ -643,6 +671,7 @@ class Donor extends DataClass implements Insertable<Donor> {
       'workEmail': serializer.toJson<String>(workEmail),
       'phenotype': serializer.toJson<String>(phenotype),
       'birthDate': serializer.toJson<String>(birthDate),
+      'birthPlace': serializer.toJson<String>(birthPlace),
       'lastDonation': serializer.toJson<String>(lastDonation),
       'lastTest': serializer.toJson<String>(lastTest),
       'notes': serializer.toJson<String>(notes),
@@ -667,6 +696,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     String? workEmail,
     String? phenotype,
     String? birthDate,
+    String? birthPlace,
     String? lastDonation,
     String? lastTest,
     String? notes,
@@ -688,6 +718,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     workEmail: workEmail ?? this.workEmail,
     phenotype: phenotype ?? this.phenotype,
     birthDate: birthDate ?? this.birthDate,
+    birthPlace: birthPlace ?? this.birthPlace,
     lastDonation: lastDonation ?? this.lastDonation,
     lastTest: lastTest ?? this.lastTest,
     notes: notes ?? this.notes,
@@ -717,6 +748,9 @@ class Donor extends DataClass implements Insertable<Donor> {
       workEmail: data.workEmail.present ? data.workEmail.value : this.workEmail,
       phenotype: data.phenotype.present ? data.phenotype.value : this.phenotype,
       birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
+      birthPlace: data.birthPlace.present
+          ? data.birthPlace.value
+          : this.birthPlace,
       lastDonation: data.lastDonation.present
           ? data.lastDonation.value
           : this.lastDonation,
@@ -749,6 +783,7 @@ class Donor extends DataClass implements Insertable<Donor> {
           ..write('workEmail: $workEmail, ')
           ..write('phenotype: $phenotype, ')
           ..write('birthDate: $birthDate, ')
+          ..write('birthPlace: $birthPlace, ')
           ..write('lastDonation: $lastDonation, ')
           ..write('lastTest: $lastTest, ')
           ..write('notes: $notes, ')
@@ -761,7 +796,7 @@ class Donor extends DataClass implements Insertable<Donor> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     name,
     gender,
@@ -775,6 +810,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     workEmail,
     phenotype,
     birthDate,
+    birthPlace,
     lastDonation,
     lastTest,
     notes,
@@ -782,7 +818,7 @@ class Donor extends DataClass implements Insertable<Donor> {
     donationCount,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -800,6 +836,7 @@ class Donor extends DataClass implements Insertable<Donor> {
           other.workEmail == this.workEmail &&
           other.phenotype == this.phenotype &&
           other.birthDate == this.birthDate &&
+          other.birthPlace == this.birthPlace &&
           other.lastDonation == this.lastDonation &&
           other.lastTest == this.lastTest &&
           other.notes == this.notes &&
@@ -823,6 +860,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
   final Value<String> workEmail;
   final Value<String> phenotype;
   final Value<String> birthDate;
+  final Value<String> birthPlace;
   final Value<String> lastDonation;
   final Value<String> lastTest;
   final Value<String> notes;
@@ -845,6 +883,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
     this.workEmail = const Value.absent(),
     this.phenotype = const Value.absent(),
     this.birthDate = const Value.absent(),
+    this.birthPlace = const Value.absent(),
     this.lastDonation = const Value.absent(),
     this.lastTest = const Value.absent(),
     this.notes = const Value.absent(),
@@ -868,6 +907,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
     this.workEmail = const Value.absent(),
     this.phenotype = const Value.absent(),
     this.birthDate = const Value.absent(),
+    this.birthPlace = const Value.absent(),
     this.lastDonation = const Value.absent(),
     this.lastTest = const Value.absent(),
     this.notes = const Value.absent(),
@@ -896,6 +936,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
     Expression<String>? workEmail,
     Expression<String>? phenotype,
     Expression<String>? birthDate,
+    Expression<String>? birthPlace,
     Expression<String>? lastDonation,
     Expression<String>? lastTest,
     Expression<String>? notes,
@@ -919,6 +960,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
       if (workEmail != null) 'work_email': workEmail,
       if (phenotype != null) 'phenotype': phenotype,
       if (birthDate != null) 'birth_date': birthDate,
+      if (birthPlace != null) 'birth_place': birthPlace,
       if (lastDonation != null) 'last_donation': lastDonation,
       if (lastTest != null) 'last_test': lastTest,
       if (notes != null) 'notes': notes,
@@ -944,6 +986,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
     Value<String>? workEmail,
     Value<String>? phenotype,
     Value<String>? birthDate,
+    Value<String>? birthPlace,
     Value<String>? lastDonation,
     Value<String>? lastTest,
     Value<String>? notes,
@@ -967,6 +1010,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
       workEmail: workEmail ?? this.workEmail,
       phenotype: phenotype ?? this.phenotype,
       birthDate: birthDate ?? this.birthDate,
+      birthPlace: birthPlace ?? this.birthPlace,
       lastDonation: lastDonation ?? this.lastDonation,
       lastTest: lastTest ?? this.lastTest,
       notes: notes ?? this.notes,
@@ -1020,6 +1064,9 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
     if (birthDate.present) {
       map['birth_date'] = Variable<String>(birthDate.value);
     }
+    if (birthPlace.present) {
+      map['birth_place'] = Variable<String>(birthPlace.value);
+    }
     if (lastDonation.present) {
       map['last_donation'] = Variable<String>(lastDonation.value);
     }
@@ -1063,6 +1110,7 @@ class DonorsCompanion extends UpdateCompanion<Donor> {
           ..write('workEmail: $workEmail, ')
           ..write('phenotype: $phenotype, ')
           ..write('birthDate: $birthDate, ')
+          ..write('birthPlace: $birthPlace, ')
           ..write('lastDonation: $lastDonation, ')
           ..write('lastTest: $lastTest, ')
           ..write('notes: $notes, ')
@@ -2167,6 +2215,7 @@ typedef $$DonorsTableCreateCompanionBuilder =
       Value<String> workEmail,
       Value<String> phenotype,
       Value<String> birthDate,
+      Value<String> birthPlace,
       Value<String> lastDonation,
       Value<String> lastTest,
       Value<String> notes,
@@ -2191,6 +2240,7 @@ typedef $$DonorsTableUpdateCompanionBuilder =
       Value<String> workEmail,
       Value<String> phenotype,
       Value<String> birthDate,
+      Value<String> birthPlace,
       Value<String> lastDonation,
       Value<String> lastTest,
       Value<String> notes,
@@ -2272,6 +2322,11 @@ class $$DonorsTableFilterComposer
 
   ColumnFilters<String> get birthDate => $composableBuilder(
     column: $table.birthDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get birthPlace => $composableBuilder(
+    column: $table.birthPlace,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2385,6 +2440,11 @@ class $$DonorsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get birthPlace => $composableBuilder(
+    column: $table.birthPlace,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lastDonation => $composableBuilder(
     column: $table.lastDonation,
     builder: (column) => ColumnOrderings(column),
@@ -2475,6 +2535,11 @@ class $$DonorsTableAnnotationComposer
   GeneratedColumn<String> get birthDate =>
       $composableBuilder(column: $table.birthDate, builder: (column) => column);
 
+  GeneratedColumn<String> get birthPlace => $composableBuilder(
+    column: $table.birthPlace,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get lastDonation => $composableBuilder(
     column: $table.lastDonation,
     builder: (column) => column,
@@ -2544,6 +2609,7 @@ class $$DonorsTableTableManager
                 Value<String> workEmail = const Value.absent(),
                 Value<String> phenotype = const Value.absent(),
                 Value<String> birthDate = const Value.absent(),
+                Value<String> birthPlace = const Value.absent(),
                 Value<String> lastDonation = const Value.absent(),
                 Value<String> lastTest = const Value.absent(),
                 Value<String> notes = const Value.absent(),
@@ -2566,6 +2632,7 @@ class $$DonorsTableTableManager
                 workEmail: workEmail,
                 phenotype: phenotype,
                 birthDate: birthDate,
+                birthPlace: birthPlace,
                 lastDonation: lastDonation,
                 lastTest: lastTest,
                 notes: notes,
@@ -2590,6 +2657,7 @@ class $$DonorsTableTableManager
                 Value<String> workEmail = const Value.absent(),
                 Value<String> phenotype = const Value.absent(),
                 Value<String> birthDate = const Value.absent(),
+                Value<String> birthPlace = const Value.absent(),
                 Value<String> lastDonation = const Value.absent(),
                 Value<String> lastTest = const Value.absent(),
                 Value<String> notes = const Value.absent(),
@@ -2612,6 +2680,7 @@ class $$DonorsTableTableManager
                 workEmail: workEmail,
                 phenotype: phenotype,
                 birthDate: birthDate,
+                birthPlace: birthPlace,
                 lastDonation: lastDonation,
                 lastTest: lastTest,
                 notes: notes,

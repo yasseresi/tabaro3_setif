@@ -31,15 +31,12 @@ class DonorFormScreen extends StatefulWidget {
 
 class _DonorFormScreenState extends State<DonorFormScreen> {
   final _name = TextEditingController();
-  final _maiden = TextEditingController();
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _email = TextEditingController();
-  final _workAddress = TextEditingController();
-  final _workPhone = TextEditingController();
-  final _workEmail = TextEditingController();
   final _phenotype = TextEditingController();
   final _birth = TextEditingController();
+  final _birthPlace = TextEditingController();
   final _lastDonation = TextEditingController();
   final _lastTest = TextEditingController();
   final _notes = TextEditingController();
@@ -49,6 +46,8 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   String _photo = '';
   bool _loaded = false;
   bool _busy = false;
+  bool _showGroupError = false;
+  final _formKey = GlobalKey<FormState>();
   String? _donorId;
 
   PhotoService get _photos => PhotoService(paths: widget.state.paths);
@@ -68,15 +67,12 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
       final d = await widget.state.db.getDonor(id);
       _donorId = d.id;
       _name.text = d.name;
-      _maiden.text = d.maidenName;
       _phone.text = d.phone;
       _address.text = d.address;
       _email.text = d.email;
-      _workAddress.text = d.workAddress;
-      _workPhone.text = d.workPhone;
-      _workEmail.text = d.workEmail;
       _phenotype.text = d.phenotype;
       _birth.text = displayDate(d.birthDate);
+      _birthPlace.text = d.birthPlace;
       _lastDonation.text = displayDate(d.lastDonation);
       _lastTest.text = displayDate(d.lastTest);
       _notes.text = d.notes;
@@ -91,10 +87,9 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   List<int>? _previewBytes;
 
   Future<void> _save() async {
-    if (_name.text.trim().isEmpty || _group == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t('required'))));
+    final valid = _formKey.currentState?.validate() ?? false;
+    setState(() => _showGroupError = _group == null);
+    if (!valid || _group == null) {
       return;
     }
     setState(() => _busy = true);
@@ -109,14 +104,17 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
         gender: _gender,
         bloodGroup: _group!,
         phone: _phone.text.trim(),
-        maidenName: _maiden.text.trim(),
         address: _address.text.trim(),
         email: _email.text.trim(),
-        workAddress: _workAddress.text.trim(),
-        workPhone: _workPhone.text.trim(),
-        workEmail: _workEmail.text.trim(),
+        // Maiden name and work contacts are no longer edited; keep any
+        // legacy values.
+        maidenName: existing?.maidenName ?? '',
+        workAddress: existing?.workAddress ?? '',
+        workPhone: existing?.workPhone ?? '',
+        workEmail: existing?.workEmail ?? '',
         phenotype: _phenotype.text.trim(),
         birthDate: normalizeDate(_birth.text),
+        birthPlace: _birthPlace.text.trim(),
         lastDonation: existing?.lastDonation ?? '',
         lastTest: existing?.lastTest ?? '',
         notes: _notes.text.trim(),
@@ -133,23 +131,20 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
       _donorId = id;
       await _linkPhoto(id);
 
-      // Date edits keep the donation_events history in sync (transactional
-      // invariant): record events for any newly-set dates.
-      final newDon = normalizeDate(_lastDonation.text);
-      final newTest = normalizeDate(_lastTest.text);
-      if (newDon.isNotEmpty && newDon != (existing?.lastDonation ?? '')) {
-        await widget.state.db.recordEvent(
-          donorId: id,
-          eventType: 'donation',
-          eventDate: newDon,
-        );
-      }
-      if (newTest.isNotEmpty && newTest != (existing?.lastTest ?? '')) {
-        await widget.state.db.recordEvent(
-          donorId: id,
-          eventType: 'test',
-          eventDate: newTest,
-        );
+      // Date edits (set, correct or clear) keep donation_events in sync.
+      for (final (type, text, old) in [
+        ('donation', _lastDonation.text, existing?.lastDonation ?? ''),
+        ('test', _lastTest.text, existing?.lastTest ?? ''),
+      ]) {
+        final date = normalizeDate(text);
+        if (date != old) {
+          await widget.state.db.replaceLastEvent(
+            donorId: id,
+            eventType: type,
+            oldDate: old,
+            newDate: date,
+          );
+        }
       }
       if (mounted) {
         ScaffoldMessenger.of(
@@ -177,31 +172,23 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
   Future<void> _pickPhoto() async {
     final bytes = await _photos.pickBytes();
     if (bytes == null) return;
-    if (_donorId == null) {
-      // Not saved yet — keep in memory, link after first Save.
-      setState(() {
-        _pendingPhotoBytes = bytes;
-        _photo = '';
-        _previewBytes = bytes;
-      });
-    } else {
-      final name = await _photos.store(_donorId!, bytes);
-      setState(() => _photo = name);
-    }
+    // Staged in memory; written to disk only on Save so Cancel undoes it.
+    setState(() {
+      _pendingPhotoBytes = bytes;
+      _previewBytes = bytes;
+    });
   }
 
   Future<void> _clearForm() async {
+    _formKey.currentState?.reset();
     for (final c in [
       _name,
-      _maiden,
       _phone,
       _address,
       _email,
-      _workAddress,
-      _workPhone,
-      _workEmail,
       _phenotype,
       _birth,
+      _birthPlace,
       _lastDonation,
       _lastTest,
       _notes,
@@ -211,6 +198,7 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
     setState(() {
       _gender = 'M';
       _group = null;
+      _showGroupError = false;
       _photo = '';
       _pendingPhotoBytes = null;
       _previewBytes = null;
@@ -272,171 +260,160 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
 
   Widget _formColumn() {
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _label(t('name')),
-          TextField(
-            controller: _name,
-            decoration: InputDecoration(hintText: t('name')),
-          ),
-          _label(t('maidenName')),
-          TextField(controller: _maiden),
-          const SizedBox(height: 10),
-          _label(t('gender')),
-          Row(
-            children: [
-              _genderToggle('M'),
-              const SizedBox(width: 8),
-              _genderToggle('F'),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _label(t('bloodGroup')),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [for (final g in bloodGroups) _groupButton(g)],
-          ),
-          const SizedBox(height: 10),
-          _label(t('phone')),
-          TextField(
-            controller: _phone,
-            textDirection: TextDirection.ltr,
-            maxLength: 15,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[\d+\s]')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _label(t('birthDate')),
-          TextField(
-            controller: _birth,
-            textDirection: TextDirection.ltr,
-            decoration: InputDecoration(hintText: 'JJ/MM/AAAA'),
-            onSubmitted: (_) {},
-          ),
-          const SizedBox(height: 10),
-          _label(t('homeAddress')),
-          TextField(controller: _address, maxLines: 2, minLines: 1),
-          _label('${t('email')} (${t('optional')})'),
-          TextField(controller: _email, textDirection: TextDirection.ltr),
-          const SizedBox(height: 10),
-          _label(t('workAddress')),
-          TextField(controller: _workAddress, maxLines: 2, minLines: 1),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label(t('phone')),
-                    TextField(
-                      controller: _workPhone,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label(t('email')),
-                    TextField(
-                      controller: _workEmail,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label(t('lastDonation')),
-                    _dateField(_lastDonation),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [_label(t('lastTest')), _dateField(_lastTest)],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _label(t('phenotype')),
-          TextField(controller: _phenotype),
-          _label(t('notes')),
-          TextField(controller: _notes, maxLines: 2, minLines: 1),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: _busy
-                      ? const SizedBox(
-                          width: 15,
-                          height: 15,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(LucideIcons.save, size: 16),
-                  label: Text(t('save')),
-                  onPressed: _busy ? null : _save,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.success,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _label(t('name')),
+            TextFormField(
+              controller: _name,
+              decoration: InputDecoration(hintText: t('name')),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? t('requiredField')
+                  : null,
+            ),
+            const SizedBox(height: 10),
+            _label(t('gender')),
+            Row(
+              children: [
+                _genderToggle('M'),
+                const SizedBox(width: 8),
+                _genderToggle('F'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _label(t('bloodGroup')),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [for (final g in bloodGroups) _groupButton(g)],
+            ),
+            if (_showGroupError)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(top: 4),
+                child: Text(
+                  t('requiredField'),
+                  style: const TextStyle(
+                    color: AppColors.destructive,
+                    fontSize: 12,
                   ),
-                  icon: const Icon(LucideIcons.plus, size: 16),
-                  label: Text(t('newBtn')),
-                  onPressed: _clearForm,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(LucideIcons.x, size: 16),
-                  label: Text(t('cancel')),
-                  onPressed: widget.onClose,
+            const SizedBox(height: 10),
+            _label(t('birthDate')),
+            TextFormField(
+              controller: _birth,
+              textDirection: TextDirection.ltr,
+              inputFormatters: [_DateInputFormatter()],
+              decoration: _dateDecoration(_birth, birth: true),
+              validator: _dateValidator,
+            ),
+            _label(t('birthPlace')),
+            TextFormField(controller: _birthPlace),
+            const SizedBox(height: 10),
+            _label(t('address')),
+            TextFormField(controller: _address, maxLines: 2, minLines: 1),
+            _label(t('phone')),
+            TextFormField(
+              controller: _phone,
+              textDirection: TextDirection.ltr,
+              maxLength: 10,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(counterText: ''),
+              validator: _phoneValidator,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
+            _label(t('email')),
+            TextFormField(
+              controller: _email,
+              textDirection: TextDirection.ltr,
+              validator: _emailValidator,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label(t('lastDonation')),
+                      _dateField(_lastDonation),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(LucideIcons.printer, size: 16),
-                  label: Text(t('card')),
-                  onPressed: _donorId == null ? null : _printCard,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [_label(t('lastTest')), _dateField(_lastTest)],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(LucideIcons.fileText, size: 16),
-                  label: Text(tr(lang, 'printCswFiche')),
-                  onPressed: _donorId == null ? null : _printCsw,
+              ],
+            ),
+            const SizedBox(height: 10),
+            _label(t('phenotype')),
+            TextFormField(controller: _phenotype),
+            _label(t('notes')),
+            TextFormField(controller: _notes, maxLines: 2, minLines: 1),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 15,
+                            height: 15,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(LucideIcons.save, size: 16),
+                    label: Text(t('save')),
+                    onPressed: _busy ? null : _save,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                    ),
+                    icon: const Icon(LucideIcons.plus, size: 16),
+                    label: Text(t('newBtn')),
+                    onPressed: _clearForm,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(LucideIcons.x, size: 16),
+                    label: Text(t('cancel')),
+                    onPressed: widget.onClose,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(LucideIcons.printer, size: 16),
+                    label: Text(t('card')),
+                    onPressed: _donorId == null ? null : _printCard,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(LucideIcons.fileText, size: 16),
+                    label: Text(tr(lang, 'printCswFiche')),
+                    onPressed: _donorId == null ? null : _printCsw,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -508,7 +485,10 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
     final active = _group == g;
     return InkWell(
       borderRadius: BorderRadius.circular(8),
-      onTap: () => setState(() => _group = g),
+      onTap: () => setState(() {
+        _group = g;
+        _showGroupError = false;
+      }),
       child: Container(
         padding: const EdgeInsetsDirectional.symmetric(
           horizontal: 14,
@@ -535,19 +515,79 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
     );
   }
 
-  Widget _dateField(TextEditingController c) => TextField(
+  Widget _dateField(TextEditingController c) => TextFormField(
     controller: c,
     textDirection: TextDirection.ltr,
-    decoration: const InputDecoration(hintText: 'JJ/MM/AAAA'),
+    inputFormatters: [_DateInputFormatter()],
+    decoration: _dateDecoration(c),
     onChanged: (_) => setState(() {}),
+    validator: _dateValidator,
   );
+
+  InputDecoration _dateDecoration(
+    TextEditingController c, {
+    bool birth = false,
+  }) => InputDecoration(
+    hintText: t('dateHint'),
+    suffixIcon: IconButton(
+      tooltip: t('date'),
+      icon: const Icon(LucideIcons.calendar, size: 16),
+      onPressed: () => _pickDate(c, birth: birth),
+    ),
+  );
+
+  /// Native calendar; typing a date by hand still works.
+  Future<void> _pickDate(TextEditingController c, {bool birth = false}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final typed = DateTime.tryParse(normalizeDate(c.text));
+    final initial = typed ?? (birth ? DateTime(now.year - 30) : today);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(today) ? today : initial,
+      firstDate: DateTime(1900),
+      lastDate: today,
+    );
+    if (picked != null) setState(() => c.text = displayDate(isoDate(picked)));
+  }
+
+  String? _phoneValidator(String? value) {
+    final phone = value?.trim() ?? '';
+    if (phone.isEmpty) return null;
+    if (!RegExp(r'^\d{10}$').hasMatch(phone)) return t('invalidPhone');
+    return null;
+  }
+
+  String? _emailValidator(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return null;
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)
+        ? null
+        : t('invalidEmail');
+  }
+
+  String? _dateValidator(String? value) {
+    final date = value?.trim() ?? '';
+    if (date.isEmpty) return null;
+    if (!RegExp(
+      r'^(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{1,2}-\d{1,2})$',
+    ).hasMatch(date)) {
+      return t('invalidDate');
+    }
+    final normalized = normalizeDate(date);
+    if (normalized.isEmpty) return t('invalidDate');
+    if (normalized.compareTo(isoDate(DateTime.now())) > 0) {
+      return t('futureDate');
+    }
+    return null;
+  }
 
   Widget _photoBox() {
     ImageProvider? provider;
-    if (_photo.isNotEmpty) {
-      provider = FileImage(_photos.fileFor(_photo));
-    } else if (_previewBytes != null) {
+    if (_previewBytes != null) {
       provider = MemoryImage(Uint8List.fromList(_previewBytes!));
+    } else if (_photo.isNotEmpty) {
+      provider = FileImage(_photos.fileFor(_photo));
     }
     return Container(
       height: 224,
@@ -566,12 +606,17 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
                       image: provider,
                       fit: BoxFit.cover,
                       width: 220,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        LucideIcons.user,
+                        size: 56,
+                        color: AppColors.textSecondary.withValues(alpha: 0.55),
+                      ),
                     ),
                   )
                 : Icon(
                     LucideIcons.user,
                     size: 56,
-                    color: AppColors.border.withValues(alpha: 1.5),
+                    color: AppColors.textSecondary.withValues(alpha: 0.55),
                   ),
           ),
           PositionedDirectional(
@@ -728,4 +773,34 @@ class _DonorFormScreenState extends State<DonorFormScreen> {
 
   // (kept minimal: TA/poids/type/bilan are captured via recordEvent dialog
   // from the Alerts screen "Mark Donated Today" flow)
+}
+
+/// Types DD/MM/YYYY for the user: digits only, slashes inserted after the
+/// day and month, so the cursor moves day -> month -> year by itself.
+class _DateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    // Backspace over an auto-inserted '/' would otherwise be undone: drop the
+    // digit before it instead.
+    if (newValue.text.length < oldValue.text.length &&
+        digits == oldValue.text.replaceAll(RegExp(r'\D'), '') &&
+        digits.isNotEmpty) {
+      digits = digits.substring(0, digits.length - 1);
+    }
+    if (digits.length > 8) digits = digits.substring(0, 8);
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i == 2 || i == 4) buf.write('/');
+      buf.write(digits[i]);
+    }
+    final text = buf.toString();
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }

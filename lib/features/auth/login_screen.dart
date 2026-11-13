@@ -32,10 +32,63 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _busy = false);
     if (ok) {
       _bad = false;
+      if (widget.state.settings.isDefaultPassword && !await _forceChange()) {
+        return;
+      }
       widget.onSuccess();
     } else {
       setState(() => _bad = true);
     }
+  }
+
+  /// First login with the shipped admin/admin: a new password is mandatory.
+  Future<bool> _forceChange() async {
+    final ctrl = TextEditingController();
+    var tooWeak = false;
+    final pass = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text(t('newPass')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(t('mustChangePass')),
+              const SizedBox(height: 10),
+              TextField(
+                controller: ctrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  errorText: tooWeak ? t('password_min6') : null,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(t('cancel')),
+            ),
+            FilledButton(
+              onPressed: () {
+                final v = ctrl.text.trim();
+                if (v.length < 6 || v.toLowerCase() == 'admin') {
+                  setD(() => tooWeak = true);
+                } else {
+                  Navigator.pop(ctx, v);
+                }
+              },
+              child: Text(t('confirm')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (pass == null) return false;
+    await widget.state.db.updateAccount(widget.state.settings.username, pass);
+    await widget.state.reloadSettings();
+    return true;
   }
 
   @override

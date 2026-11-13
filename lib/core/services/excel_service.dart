@@ -13,7 +13,7 @@ class ExcelService {
   /// identity fields so no data is lost in a round-trip.
   static const List<String> headers = [
     'Nom / الاسم',
-    'Nom jeune fille / اسم الزواج',
+    'Nom jeune fille / اسم العائلة قبل الزواج',
     'Sexe / الجنس',
     'Groupe / الزمرة',
     'Téléphone / الهاتف',
@@ -24,6 +24,7 @@ class ExcelService {
     'E-mail pro. / البريد المهني',
     'Phénotype / النمط الظاهري',
     'Date naissance / الميلاد',
+    'Lieu de naissance / مكان الميلاد',
     'Dernier don / آخر تبرع',
     'Dernière analyse / آخر تحليل',
     'Remarque / ملاحظة',
@@ -59,6 +60,7 @@ class ExcelService {
         xl.TextCellValue(d.workEmail),
         xl.TextCellValue(d.phenotype),
         xl.TextCellValue(displayDate(d.birthDate)),
+        xl.TextCellValue(d.birthPlace),
         xl.TextCellValue(displayDate(d.lastDonation)),
         xl.TextCellValue(displayDate(d.lastTest)),
         xl.TextCellValue(d.notes),
@@ -165,7 +167,11 @@ class ExcelService {
     }
 
     final cName = findCol(['nom', 'الاسم', 'name'], 0);
-    final cMaiden = findCol(['jeune fille', 'اسم الزواج'], 1);
+    final cMaiden = findCol([
+      'jeune fille',
+      'اسم العائلة قبل الزواج',
+      'اسم الزواج',
+    ], 1);
     final cSexe = findCol(['sexe', 'الجنس', 'gender'], 2);
     final cGroupe = findCol(['groupe', 'الزمرة', 'groupe sanguin'], 3);
     final cTel = findCol([
@@ -182,14 +188,18 @@ class ExcelService {
     final cEmailPro = findCol(['e-mail pro', 'البريد المهني'], 9);
     final cPheno = findCol(['phénotype', 'phenotype', 'النمط'], 10);
     final cBirth = findCol(['naissance', 'الميلاد', 'birth'], 11);
-    final cDon = findCol(['dernier don', 'آخر تبرع'], 12);
-    final cTest = findCol(['analyse', 'آخر تحليل'], 13);
-    final cNotes = findCol(['remarque', 'ملاحظة', 'note'], 14);
+    final cBirthPlace = headerRow.indexWhere(
+      (h) => h.contains('lieu de naissance') || h.contains('مكان الميلاد'),
+    );
+    final cDon = findCol(['dernier don', 'آخر تبرع'], 13);
+    final cTest = findCol(['analyse', 'آخر تحليل'], 14);
+    final cNotes = findCol(['remarque', 'ملاحظة', 'note'], 15);
 
     final out = <ImportedDonor>[];
     for (final row in table.skip(1)) {
-      String cell(int i) =>
-          i < row.length && row[i] != null ? row[i].toString().trim() : '';
+      String cell(int i) => i >= 0 && i < row.length && row[i] != null
+          ? row[i].toString().trim()
+          : '';
       final name = cell(cName);
       final group = normalizeBloodGroup(cell(cGroupe));
       if (name.isEmpty || group == null) continue;
@@ -207,6 +217,7 @@ class ExcelService {
           workEmail: cell(cEmailPro),
           phenotype: cell(cPheno),
           birthDate: normalizeDate(cell(cBirth)),
+          birthPlace: cell(cBirthPlace),
           lastDonation: normalizeDate(cell(cDon)),
           lastTest: normalizeDate(cell(cTest)),
           notes: cell(cNotes),

@@ -1,6 +1,5 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../../../data/app_database.dart';
 import '../domain/eligibility.dart';
@@ -86,7 +85,7 @@ class PdfCardService {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (f) => pdf.save());
+    await PdfCommon.printPdf(pdf, name: 'donor_card');
   }
 
   static pw.Widget _detailsTable(
@@ -129,7 +128,6 @@ class PdfCardService {
       columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2)},
       children: [
         row('الاسم و اللقب', 'Nom et prénom', d.name),
-        row('اسم الزواج', 'Nom de jeune fille', d.maidenName),
         row(
           'الجنس',
           'Sexe',
@@ -138,10 +136,9 @@ class PdfCardService {
         row('زمرة الدم', 'Groupe sanguin', d.bloodGroup),
         row('رقم الهاتف', 'Téléphone', d.phone),
         row('تاريخ الميلاد', 'Date de naissance', displayDate(d.birthDate)),
+        row('مكان الميلاد', 'Lieu de naissance', d.birthPlace),
         row('العنوان', 'Adresse', d.address),
         row('البريد الإلكتروني', 'E-mail', d.email),
-        row('عنوان مكان العمل', 'Adresse professionnelle', d.workAddress),
-        row('هاتف العمل', 'Téléphone professionnel', d.workPhone),
         row('النمط الظاهري', 'Phénotype', d.phenotype),
         row('آخر تبرع', 'Dernier don', displayDate(d.lastDonation)),
         row('آخر تحليل دم', 'Dernière analyse', displayDate(d.lastTest)),

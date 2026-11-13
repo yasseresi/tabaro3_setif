@@ -7,6 +7,7 @@ import '../../core/resources/app_colors.dart';
 import '../../core/resources/app_strings.dart';
 import '../../core/services/csw_fiche_service.dart';
 import '../../core/widgets/shared.dart';
+import '../../core/services/photo_service.dart';
 import '../../data/app_database.dart';
 
 /// Screen 2: Donors list — search, filters, table, pagination (10/page).
@@ -334,6 +335,7 @@ class _DonorsListScreenState extends State<DonorsListScreen> {
     );
     if (ok == true) {
       await widget.state.db.deleteDonor(d.id);
+      await PhotoService(paths: widget.state.paths).remove(d.photoFilename);
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -8,6 +8,10 @@ donor cards and the official **CSW « Fiche Donneur de Sang »** form (ANS/COL/F
 
 Bilingual: **Arabic (RTL, default)** & **French (LTR)** with instant direction switching.
 
+<p align="center">
+  <img src="docs/screenshots/01-dashboard.png" width="900" alt="Dashboard: donor totals, eligibility and blood-group chart"/>
+</p>
+
 ---
 
 ## Features
@@ -17,7 +21,7 @@ Bilingual: **Arabic (RTL, default)** & **French (LTR)** with instant direction s
 | **Login** | Single local admin (`admin` / `admin`), salted SHA-256 hash, editable in Settings. |
 | **Dashboard** | KPIs (total / eligible now / eligible this week), blood-group chart, recent donors. |
 | **Donors** | Search, filter by group & status, paginated table (10/page), edit / delete. |
-| **Donor form** | Full identity (name, maiden name, birth date, home & work addresses, e-mails, phones), photo (resized JPEG on disk, never Base64 in DB), live eligibility preview, donation history. |
+| **Donor form** | Identity (name, gender, blood group, birth date & place, address, e-mail, phone), photo (resized JPEG on disk, never Base64 in DB), live eligibility preview, donation history. |
 | **Alerts** | Donors `due` or `soon`, most overdue first; call helper (copies phone + big display) and one-click **"Mark Donated Today"** (records history in one SQLite transaction). |
 | **Import / Export** | Smart-merge Excel import (match by phone, else name+group; never duplicates), 2-sheet export (`Donneurs` + `Historique`), empty template, **full `.zip` backup/restore** (DB + photos, `VACUUM INTO` snapshot). |
 | **Printing** | Bilingual donor card PDF + the official **CSW Fiche Donneur de Sang** (identity block, donation table: Date / N° / TA / Poids / Type de don / Bilan / Contre-indications, ABO-Rhésus-Phénotype block), blank or pre-filled. |
@@ -34,13 +38,15 @@ Bilingual: **Arabic (RTL, default)** & **French (LTR)** with instant direction s
 
 ## 📸 Screenshots
 
-> Screenshots coming soon. Drop images in `docs/screenshots/` and uncomment the table below.
+> Shown with fictional demo data.
 
-<!--
-| Screen 1 | Screen 2 | Screen 3 |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/01.png" width="240"/> | <img src="docs/screenshots/02.png" width="240"/> | <img src="docs/screenshots/03.png" width="240"/> |
--->
+| Donor list | Eligibility alerts |
+|:---:|:---:|
+| <img src="docs/screenshots/02-donors.png" width="440" alt="Donor list with search, filters and status"/> | <img src="docs/screenshots/03-alerts.png" width="440" alt="Donors eligible to donate, with call and Mark donated today"/> |
+
+| Donor form | Import / Export & backup |
+|:---:|:---:|
+| <img src="docs/screenshots/04-donor-form.png" width="440" alt="Donor form with next eligibility date and donation history"/> | <img src="docs/screenshots/05-import-export.png" width="440" alt="Excel import/export and full zip backup"/> |
 
 ## Data storage (never in `Program Files`)
 

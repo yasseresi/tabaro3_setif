@@ -69,6 +69,45 @@ Pushing to `beta` or `main` triggers **GitHub Actions**: analyze → test →
 `flutter build windows --release` → bundle VC++ runtime DLLs → Inno Setup `.exe` →
 GitHub Release. Beta and stable install side-by-side and never share data.
 
+## Windows: known issue — Defender false positive
+
+The GitHub Release ships **one file**: the installer (`Tabaro3_Setif_Setup_*.exe`).
+The app itself (`tabaro3_setif.exe`) is placed by that installer in
+`%LOCALAPPDATA%\Programs\Tabaro3Setif\`.
+
+Both files are **not code-signed** yet, so Microsoft Defender may flag the app as
+*"virus ou logiciel potentiellement indésirable"* and quarantine it — sometimes a
+day or two after install. Symptom: the desktop shortcut turns into a blank icon
+and the app no longer starts. Donor data is **not** affected (it lives in
+`%APPDATA%`, see above).
+
+Permanent fix: sign the installer and `tabaro3_setif.exe` with a code-signing
+certificate in `release.yml`. Until then, give the client these steps (admin
+account required):
+
+> **Windows Defender bloque Tabaro3 Sétif — que faire ?**
+>
+> 1. Ouvrir **Sécurité Windows** → **Protection contre les virus et menaces** →
+>    **Historique de protection**.
+> 2. Cliquer sur l'élément bloqué *tabaro3_setif.exe* → **Actions** →
+>    **Restaurer** (ou **Autoriser sur l'appareil**).
+> 3. Revenir à **Protection contre les virus et menaces** → **Gérer les
+>    paramètres** → **Exclusions** → **Ajouter ou supprimer des exclusions** →
+>    **Ajouter une exclusion** → **Dossier** → choisir
+>    `C:\Users\<utilisateur>\AppData\Local\Programs\Tabaro3Setif`.
+> 4. Si l'application ne démarre toujours pas, relancer l'installateur
+>    (les données des donneurs sont conservées).
+
+Also report each new release as a false positive at
+<https://www.microsoft.com/en-us/wdsi/filesubmission> ("Software developer"),
+uploading both the installer and `tabaro3_setif.exe`.
+
+## Printing (PDF)
+
+Cards and fiches are not sent to a printer directly. They are saved to
+`Documents\Tabaro3Setif\` and opened in the default PDF viewer, so the user can
+view, keep and print them later — no printer needs to be installed.
+
 ## Development
 
 ```bash

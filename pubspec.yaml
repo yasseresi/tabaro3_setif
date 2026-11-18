@@ -20,9 +20,8 @@ dependencies:
   # Files & archives
   file_picker: ^13.3.0
   archive: ^4.5.1
-  # PDF & printing
+  # PDF
   pdf: ^3.13.0
-  printing: ^5.15.1
   # Images (donor photo resizing)
   image: ^4.3.0
   # Utils

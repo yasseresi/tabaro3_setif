@@ -3,35 +3,31 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 /// Shared PDF helpers: Cairo font loading + CWTS institutional header.
 class PdfCommon {
   PdfCommon._();
 
-  /// Sends finished PDF bytes to the OS print flow.
-  /// Windows: native print dialog via `printing` (the clinic's platform).
-  /// macOS: open in Preview — its print dialog is the native macOS way
-  /// (`Printing.layoutPdf`'s WKWebView dialog is unreliable there).
-  static Future<void> printPdf(
+  /// Saves the PDF to `Documents/Tabaro3Setif/` and opens it in the OS default
+  /// viewer (Edge/Acrobat on Windows, Preview on macOS). The user prints from
+  /// there whenever a printer is available — no direct print dialog, which on
+  /// Windows fails with "install a printer" when none is configured.
+  static Future<File> printPdf(
     pw.Document pdf, {
     String name = 'tabaro3',
   }) async {
-    final bytes = await pdf.save();
-    if (Platform.isMacOS) {
-      final file = File(
-        p.join(
-          Directory.systemTemp.path,
-          '${name}_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        ),
-      );
-      await file.writeAsBytes(bytes);
-      await Process.run('open', [file.path]);
-    } else {
-      await Printing.layoutPdf(onLayout: (_) => bytes);
-    }
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory(p.join(docs.path, 'Tabaro3Setif'));
+    await dir.create(recursive: true);
+    final file = File(
+      p.join(dir.path, '${name}_${DateTime.now().millisecondsSinceEpoch}.pdf'),
+    );
+    await file.writeAsBytes(await pdf.save());
+    await Process.run(Platform.isWindows ? 'explorer' : 'open', [file.path]);
+    return file;
   }
 
   static Future<(pw.Font, pw.Font)> loadFonts() async {
